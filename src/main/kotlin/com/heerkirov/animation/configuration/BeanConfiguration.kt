@@ -14,8 +14,8 @@ class BeanConfiguration {
 
     @Bean
     fun getOSSClient(@Value("\${oss.endpoint}") endpoint: String,
-                     @Value("\${oss.access-key-id}") accessKeyId: String,
-                     @Value("\${oss.access-key-secret}") accessKeySecret: String): OSS {
+                     @Value("\${oss.access-key.id}") accessKeyId: String,
+                     @Value("\${oss.access-key.secret}") accessKeySecret: String): OSS {
         return OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret)
     }
 }

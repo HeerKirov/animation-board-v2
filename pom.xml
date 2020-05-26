@@ -107,6 +107,29 @@
 					</dependency>
 				</dependencies>
 			</plugin>
+			<plugin>
+				<groupId>org.jooq</groupId>
+				<artifactId>jooq-codegen-maven</artifactId>
+				<configuration>
+					<jdbc>
+						<driver>org.postgresql.Driver</driver>
+						<url>jdbc:postgresql://localhost:5432/animation_board_v2</url>
+						<user>postgres</user>
+					</jdbc>
+					<generator>
+						<database>
+							<inputSchema>public</inputSchema>
+							<includes>
+								animation|animation_staff_relation|animation_tag_relation|comment|diary|message|staff|statistics|tag|user
+							</includes>
+						</database>
+						<target>
+							<packageName>com.heerkirov.animation.jooq</packageName>
+							<directory>src/main/kotlin</directory>
+						</target>
+					</generator>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
