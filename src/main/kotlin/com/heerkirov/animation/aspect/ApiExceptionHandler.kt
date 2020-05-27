@@ -1,10 +1,7 @@
 package com.heerkirov.animation.aspect
 
 import com.heerkirov.animation.enums.ErrCode
-import com.heerkirov.animation.exception.ApiException
-import com.heerkirov.animation.exception.AuthenticationException
-import com.heerkirov.animation.exception.BadRequestException
-import com.heerkirov.animation.exception.NotFoundException
+import com.heerkirov.animation.exception.*
 import com.heerkirov.animation.form.ErrResult
 import com.heerkirov.animation.util.logger
 import org.slf4j.Logger
@@ -18,13 +15,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 class ApiExceptionHandler {
     private val log: Logger = logger<ApiExceptionHandler>()
 
+    @ExceptionHandler(BadRequestException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun badRequest(e: BadRequestException): ErrResult = ErrResult(e)
+
     @ExceptionHandler(AuthenticationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun authenticationFailed(e: AuthenticationException): ErrResult = ErrResult(e)
 
-    @ExceptionHandler(BadRequestException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun badRequest(e: BadRequestException): ErrResult = ErrResult(e)
+    @ExceptionHandler(ForbiddenException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun forbidden(e: ForbiddenException): ErrResult = ErrResult(e)
 
     @ExceptionHandler(NotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)

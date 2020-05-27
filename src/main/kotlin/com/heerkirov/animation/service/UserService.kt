@@ -6,5 +6,5 @@ import com.heerkirov.animation.model.UserSetting
 interface UserService {
     fun get(username: String): User
 
-    fun updateSetting(username: String, setting: UserSetting): User
+    fun updateSetting(username: String, setting: UserSetting): Boolean
 }

@@ -31,13 +31,13 @@ CREATE TABLE animation(
     duration INTEGER,                               -- 平均单话时长
     sum_quantity INTEGER,                           -- 总集数
     published_quantity INTEGER,                     -- 已发布的集数
-    published_record TIMESTAMP[],                   -- 已发布的集数时间点
-    publish_plan TIMESTAMP[],                       -- 后续的发布计划时间点
+    published_record TIMESTAMP[] NOT NULL,          -- 已发布的集数时间点
+    publish_plan TIMESTAMP[] NOT NULL,              -- 后续的发布计划时间点
     -- 描述信息
     introduction TEXT,                              -- 内容介绍
     keyword VARCHAR(255),                           -- 关键词
-    limit_level_sex SMALLINT,                       -- 限制等级(性)
-    limit_level_violence SMALLINT,                  -- 限制等级(暴力)
+    sex_limit_level SMALLINT,                       -- 限制等级(性)
+    violence_limit_level SMALLINT,                  -- 限制等级(暴力)
     -- 关联
     relations JSONB NOT NULL,                       -- 原始关联表
     relations_topology JSONB NOT NULL,              -- 拓扑后的完整关联表
