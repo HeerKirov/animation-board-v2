@@ -4,6 +4,7 @@ CREATE TABLE "user"(
     is_staff BOOLEAN NOT NULL DEFAULT FALSE,        -- 用户在本系统中被单独设置为管理员。BS系统的管理员也是本系统的管理员
     setting JSONB NOT NULL DEFAULT '{}'             -- 用户的个性配置，比如推送开关、统计开关、时间表偏好
 );
+CREATE UNIQUE INDEX user__username__index ON "user"(username);
 
 CREATE TABLE message(
     id BIGSERIAL PRIMARY KEY,
@@ -100,28 +101,41 @@ CREATE TABLE comment(
 CREATE INDEX comment__owner_id__index ON comment(owner_id);
 CREATE UNIQUE INDEX comment__index ON comment(owner_id, animation_id);
 
-CREATE TABLE diary(
-    id SERIAL PRIMARY KEY,
+CREATE TABLE record(
+    id BIGSERIAL PRIMARY KEY,
     owner_id INTEGER NOT NULL,
     animation_id INTEGER NOT NULL,
     -- 观看状态与记录
-    status SMALLINT NOT NULL,                       -- 观看状态(未开始/正在观看/已看完/放弃)
+    status SMALLINT NOT NULL,                       -- 观看状态(未开始/正在观看/已看完)
+    watched_record JSONB NOT NULL DEFAULT '{}',     -- 独立的观看记录，记录每一话的观看时间
+    watched_time INTEGER NOT NULL,                  -- 观感的进度数
     watched_quantity INTEGER NOT NULL,              -- 已观看集数(严谨表述：指独立的、有观看记录的集数)
-    watched_record JSONB NOT NULL DEFAULT '[]',     -- 全部观看记录，记录每一话的观看时间，包括回看的记录
-    watch_progress FLOAT NOT NULL DEFAULT 0,        -- 观看进度，[0, 1)表示首次观看中，1表示第一次看完，超过1表示回看进度，采用俄罗斯方块法统计多次的进度
+    first_progress_id INTEGER,                      -- 首次进度的id
+    latest_progress_id INTEGER,                     -- 最新一次进度的id
 
     watch_original BOOLEAN NOT NULL DEFAULT FALSE,  -- 看过原作
-    watch_many_times BOOLEAN NOT NULL DEFAULT FALSE,-- 看过多次。向下兼容旧版数据的选项
 
     -- 关键时间点
     subscription_time TIMESTAMP,                    -- 订阅时间
     finish_time TIMESTAMP DEFAULT NULL,             -- 首次看完时间
+    last_watch_time TIMESTAMP DEFAULT NULL,         -- 上次更新观看记录的时间
 
     create_time TIMESTAMP NOT NULL,                 -- 条目创建时间
-    update_time TIMESTAMP NOT NULL                  -- 上次更新时间，可表达日记的最近活动
+    update_time TIMESTAMP NOT NULL                  -- 上次更新时间
 );
-CREATE INDEX diary__owner_id__index ON diary(owner_id);
-CREATE UNIQUE INDEX diary__index ON diary(owner_id, animation_id);
+CREATE INDEX record__owner_id__index ON record(owner_id);
+CREATE UNIQUE INDEX record__index ON record(owner_id, animation_id);
+
+CREATE TABLE record_progress(
+    id BIGSERIAL PRIMARY KEY,
+    record_id BIGINT NOT NULL,
+
+    ordinal INTEGER NOT NULL,                       -- 此进度的序列号
+    watched_record JSONB NOT NULL DEFAULT '[]',     -- 每一话的观看记录
+    start_time TIMESTAMP,                           -- 进度开始时间
+    finish_time TIMESTAMP                           -- 进度结束时间
+);
+CREATE INDEX record_progress__record_id__index ON record_progress(record_id);
 
 CREATE TABLE statistics(
     id BIGSERIAL PRIMARY KEY,

@@ -17,16 +17,17 @@
 	<properties>
 		<java.version>11</java.version>
 		<kotlin.version>1.3.72</kotlin.version>
+		<ktorm.version>2.7.2</ktorm.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jooq</artifactId>
+			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -47,6 +48,12 @@
 		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-stdlib-jdk8</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>me.liuwj.ktorm</groupId>
+			<artifactId>ktorm-core</artifactId>
+			<version>${ktorm.version}</version>
 		</dependency>
 
 		<dependency>
@@ -106,29 +113,6 @@
 						<version>${kotlin.version}</version>
 					</dependency>
 				</dependencies>
-			</plugin>
-			<plugin>
-				<groupId>org.jooq</groupId>
-				<artifactId>jooq-codegen-maven</artifactId>
-				<configuration>
-					<jdbc>
-						<driver>org.postgresql.Driver</driver>
-						<url>jdbc:postgresql://localhost:5432/animation_board_v2</url>
-						<user>postgres</user>
-					</jdbc>
-					<generator>
-						<database>
-							<inputSchema>public</inputSchema>
-							<includes>
-								animation|animation_staff_relation|animation_tag_relation|comment|diary|message|staff|statistics|tag|user
-							</includes>
-						</database>
-						<target>
-							<packageName>com.heerkirov.animation.jooq</packageName>
-							<directory>src/main/kotlin</directory>
-						</target>
-					</generator>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
