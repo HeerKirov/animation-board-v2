@@ -9,9 +9,16 @@ import kotlin.math.min
 
 @Component
 class ImageMagick(@Value("\${image.convert.size}") private val size: Int) {
+    /**
+     * 将输入流的图片保存到本地临时位置，进行处理，然后返回一个文件。
+     * - 图片将以中点为重心切割成方形。
+     * - 切割后，如果图片边长超过{size}，则将其缩小到size大小。
+     * - 图片最终转换为jpg格式
+     * 文件处理的lambda结束后，自动清除本地临时文件。
+     */
     fun process(extension: String, src: InputStream, outputHandler: File.() -> Unit) {
         val tempFile = File.createTempFile("temp-cover", ".$extension")
-        val tempOutputFile = File.createTempFile("temp-cover-output", ".$extension")
+        val tempOutputFile = File.createTempFile("temp-cover-output", ".jpg")
 
         try {
             src.use { inputStream ->
@@ -27,7 +34,7 @@ class ImageMagick(@Value("\${image.convert.size}") private val size: Int) {
             val crop = getCropSize(originWidth, originHeight)
             val resize = if(min(originWidth, originHeight) > size) size else null
 
-            doCropAndResize(tempFile.absolutePath, tempOutputFile.absolutePath, crop, resize)
+            transform(tempFile.absolutePath, tempOutputFile.absolutePath, crop, resize)
 
             outputHandler(tempOutputFile)
         }finally{
@@ -36,17 +43,16 @@ class ImageMagick(@Value("\${image.convert.size}") private val size: Int) {
         }
     }
 
-    private fun doCropAndResize(inFile: String, outFile: String, crop: Array<Int>?, resize: Int?) {
+    private fun transform(inFile: String, outFile: String, cropNum: Int?, resizeNum: Int?) {
         val cmd = ConvertCmd()
         cmd.run(IMOperation().apply {
             addImage(inFile)
-            if(crop != null) {
-                val (w, h, l ,t) = crop
+            if(cropNum != null) {
                 gravity("center")
-                crop(w, h, l, t)
+                crop(cropNum, cropNum, 0, 0)
             }
-            if(resize != null) {
-                resize(resize, resize)
+            if(resizeNum != null) {
+                resize(resizeNum, resizeNum)
             }
             addImage(outFile)
         })
@@ -74,10 +80,10 @@ class ImageMagick(@Value("\${image.convert.size}") private val size: Int) {
         return Pair(w, h)
     }
 
-    private fun getCropSize(width: Int, height: Int): Array<Int>? {
+    private fun getCropSize(width: Int, height: Int): Int? {
         return when {
-            width > height -> arrayOf(height, height, (width - height) / 2, 0)
-            width < height -> arrayOf(width, width, 0, (height - width) / 2)
+            width > height -> height
+            width < height -> width
             else -> null
         }
     }

@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.io.InputStream
 import java.net.URL
 import java.util.*
+import kotlin.NoSuchElementException
 import kotlin.random.Random
 
 @Service
@@ -47,16 +48,32 @@ class CoverServiceImpl(@Autowired private val oss: OSS,
         if(extension.isBlank()) throw BadRequestException(ErrCode.PARAM_ERROR, "Extension of filename cannot be empty.")
         if(!validExtension.contains(extension)) throw BadRequestException(ErrCode.PARAM_ERROR, "Extension of filename must be png or jpg or jpeg.")
 
-        val filename = newFilename(id, extension)
-        when(type) {
-            CoverType.ANIMATION -> if(database.update(Animations) {
-                it.cover to filename
-                where { it.id eq id }
-            } == 0) throw NotFoundException("Animation not found.")
-            CoverType.STAFF -> if(database.update(Staffs) {
-                it.cover to filename
-                where { it.id eq id }
-            } == 0) throw NotFoundException("Staff not found.")
+        val filename = newFilename(id)
+        val oldFilename = when(type) {  //查出旧的cover filename，并且更新成新的filename
+            CoverType.ANIMATION -> {
+                val oldCover = try {
+                    database.from(Animations).select(Animations.cover).where { Animations.id eq id }.first()[Animations.cover]
+                }catch (e: NoSuchElementException) {
+                    throw NotFoundException("Animation not found.")
+                }
+                database.update(Animations) {
+                    it.cover to filename
+                    where { it.id eq id }
+                }
+                oldCover
+            }
+            CoverType.STAFF -> {
+                val oldCover = try {
+                    database.from(Staffs).select(Staffs.cover).where { Staffs.id eq id }.first()[Staffs.cover]
+                }catch (e: NoSuchElementException) {
+                    throw NotFoundException("Staff not found.")
+                }
+                database.update(Staffs) {
+                    it.cover to filename
+                    where { it.id eq id }
+                }
+                oldCover
+            }
         }
         try {
             imageMagick.process(extension, inputStream) {
@@ -65,6 +82,15 @@ class CoverServiceImpl(@Autowired private val oss: OSS,
         }catch (e: Throwable) {
             log.error("Error occurred in image magick processing. ", e)
             throw InternalException(e.message)
+        }
+        if(oldFilename != null) {
+            //如果put失败，会引发数据库回滚；而如果delete在那之前，会因无法回滚外部操作导致异常。因此旧file的删除放在不会中断事务的最后。
+            try {
+                oss.deleteObject(bucket, url(type, oldFilename))
+            }catch (e: Exception) {
+                //并且因为删除操作不重要，用户不需要感知，将异常捕获写入log即可。抛出异常还可能引发回滚导致再度异常。
+                log.error("Error occurred while deleting oss object. ", e)
+            }
         }
         return filename
     }
@@ -92,8 +118,15 @@ class CoverServiceImpl(@Autowired private val oss: OSS,
 
     private fun url(type: CoverType, filename: String) = "cover/${type.name.toLowerCase()}/$filename"
 
-    private fun newFilename(id: Int, extension: String): String {
-        return String.format("%s.%013d.%03d.%s", id, System.currentTimeMillis(), rand.nextInt(), extension)
+    private fun newFilename(id: Int): String {
+        /* 文件名命名规约：
+         * - 文件名由4个部分点隔组成。
+         * - 第一部分是依附的对象的id。
+         * - 第二部分是文件上传时的当前时间戳。
+         * - 第三部分是一个[0, 1000)范围的随机数。
+         * - 最后是扩展名，所有文件的扩展名都锁定为jpg。
+         */
+        return String.format("%s.%013d.%03d.%s", id, System.currentTimeMillis(), rand.nextInt(1000), "jpg")
     }
 
     private fun getExtension(filename: String): String {

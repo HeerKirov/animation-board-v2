@@ -1,6 +1,7 @@
 package com.heerkirov.animation.configuration
 
 import com.heerkirov.animation.aspect.authorization.AuthorizationResolver
+import com.heerkirov.animation.aspect.filter.FilterResolver
 import com.heerkirov.animation.aspect.validation.ValidationResolver
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
@@ -12,6 +13,7 @@ class SpringConfiguration : WebMvcConfigurationSupport() {
         argumentResolvers.apply {
             add(AuthorizationResolver())
             add(ValidationResolver())
+            add(FilterResolver())
         }
     }
 }

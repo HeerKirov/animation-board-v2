@@ -2,7 +2,9 @@ package com.heerkirov.animation.controller
 
 import com.heerkirov.animation.aspect.authorization.Authorization
 import com.heerkirov.animation.aspect.authorization.UserIdentity
+import com.heerkirov.animation.aspect.filter.Query
 import com.heerkirov.animation.aspect.validation.Body
+import com.heerkirov.animation.filter.TagFilter
 import com.heerkirov.animation.form.TagForm
 import com.heerkirov.animation.form.toDetailRes
 import com.heerkirov.animation.form.toRes
@@ -16,7 +18,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/database/tags")
 class TagController(@Autowired private val tagService: TagService) {
     @GetMapping("")
-    fun list(): Any {
+    fun list(@Query tagFilter: TagFilter): Any {
+        println(tagFilter)
         //TODO 完成list API的详细功能
         return tagService.list().map { it.toRes() }
     }
