@@ -8,12 +8,8 @@ import java.sql.ResultSet
 import java.sql.Types
 
 
-class EnumType<T: Enum<T>>(private val enumClass: Class<T>) : SqlType<T>(Types.SMALLINT, typeName = "smallint") {
-    private val values = {
-        val getValues = enumClass.getDeclaredMethod("values")
-        @Suppress("UNCHECKED_CAST")
-        getValues(null) as Array<T>
-    }()
+class EnumType<T: Enum<T>>(enumClass: Class<T>) : SqlType<T>(Types.SMALLINT, typeName = "smallint") {
+    private val values = enumClass.enumConstants
 
     override fun doGetResult(rs: ResultSet, index: Int): T? {
         return values[rs.getInt(index)]

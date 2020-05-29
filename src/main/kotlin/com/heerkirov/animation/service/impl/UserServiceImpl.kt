@@ -36,7 +36,6 @@ class UserServiceImpl(@Autowired private val authService: AuthService,
             it.isStaff to isStaff
             it.setting to userSetting
         }
-        //TODO 写一个扩展函数快速将data class转换至insert并提取primary key
         return User(id as Int, username, isStaff, userSetting)
     }
 

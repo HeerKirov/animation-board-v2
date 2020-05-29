@@ -1,7 +1,6 @@
 package com.heerkirov.animation.aspect.validation
 
 import com.heerkirov.animation.enums.ErrCode
-import com.heerkirov.animation.exception.ApiException
 import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.util.parseJsonNode
 import org.springframework.core.MethodParameter
@@ -18,7 +17,6 @@ class ValidationResolver : HandlerMethodArgumentResolver {
         return p.hasParameterAnnotation(Body::class.java)
     }
 
-    @ExperimentalStdlibApi
     override fun resolveArgument(p: MethodParameter, container: ModelAndViewContainer?, request: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
         if(request.getHeader("content-type") != "application/json") throw BadRequestException(ErrCode.INVALID_CONTENT_TYPE, "Content-type must be application/json.")
 

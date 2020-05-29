@@ -8,6 +8,7 @@ import com.heerkirov.animation.util.map
 import com.heerkirov.animation.util.parseJSONObject
 import com.heerkirov.animation.util.toDate
 import com.heerkirov.animation.util.toDateTime
+import java.lang.Exception
 import java.lang.IllegalArgumentException
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -15,6 +16,7 @@ import java.time.format.DateTimeParseException
 import kotlin.ClassCastException
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
+import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.primaryConstructor
 
 /**
@@ -22,7 +24,7 @@ import kotlin.reflect.full.primaryConstructor
  * @throws NullPointerException 类型指定为非空，然而获得了空类型
  * @throws ClassCastException 类型转换上遇到了错误
  */
-fun <T : Any> mapAny(jsonNode: JsonNode?, kType: KType): Any? {
+private fun <T : Any> mapAny(jsonNode: JsonNode?, kType: KType): Any? {
     @Suppress("UNCHECKED_CAST")
     val kClass = kType.classifier as KClass<*>
 
@@ -93,16 +95,24 @@ fun <T : Any> mapAny(jsonNode: JsonNode?, kType: KType): Any? {
                 throw ClassCastException(e.message)
             }
         }
-        kClass.annotations.firstOrNull { it is Form } != null -> {
-            //提取非空参数，并且验证发现此参数类型也符合Form定义
-            //那么进行递归解析
+        kClass == Any::class -> mapAnyValue(jsonNode)
+        kClass.isData -> {
+            //提取非空参数，进行递归解析
             if(jsonNode.nodeType != JsonNodeType.OBJECT) throw ClassCastException("Excepted type is ${JsonNodeType.OBJECT} but actual type is ${jsonNode.nodeType}.")
             mapForm(jsonNode, kClass)
         }
-        kClass == Any::class -> mapAnyValue(jsonNode)
+        kClass.isSubclassOf(Enum::class) -> {
+            if(jsonNode.nodeType != JsonNodeType.STRING) throw ClassCastException("Excepted type is ${JsonNodeType.STRING} but actual type is ${jsonNode.nodeType}.")
+            val value = jsonNode.asText()
+            val valueOf = kClass.java.getDeclaredMethod("valueOf", String::class.java)
+            try {
+                valueOf(null, value.toUpperCase())
+            }catch (e: Exception) {
+                throw ClassCastException("Cannot convert '$value' to enum type ${kClass.simpleName}.")
+            }
+        }
         else -> throw IllegalArgumentException("Cannot analyse argument of type '$kClass'.")
     }
-    //TODO enum type
 }
 
 private fun mapStringKey(string: String, kType: KType): Any? {
@@ -161,7 +171,7 @@ fun <T : Any> mapForm(jsonNode: JsonNode, formClass: KClass<T>): T {
             fieldAnnotation.value
         }else{
             parameter.name
-        }
+        }!!
 
         when {
             //form中包含对此field的定义，将其提取出来
@@ -175,6 +185,14 @@ fun <T : Any> mapForm(jsonNode: JsonNode, formClass: KClass<T>): T {
                     throw BadRequestException(ErrCode.PARAM_ERROR, "Param '$name' cannot be null.")
                 }
 
+                if(value != null) {
+                    try {
+                        analyseValidation(parameter.annotations, name, value)
+                    }catch (e: Exception) {
+                        throw BadRequestException(ErrCode.PARAM_ERROR, e.message)
+                    }
+                }
+
                 Pair(parameter, value)
             }
             //form中不包含field的定义，但是参数定义表示此field可选
@@ -184,6 +202,24 @@ fun <T : Any> mapForm(jsonNode: JsonNode, formClass: KClass<T>): T {
         }
     }.filterNotNull().toMap()
 
-    //TODO 后续将扩展的validate挪到这里来
     return constructor.callBy(args)
+}
+
+private fun analyseValidation(annotations: List<Annotation>, name: String, value: Any) {
+    if(value is String) {
+        (annotations.firstOrNull { it is NotBlank } as NotBlank?)?.let {
+            if(value.isBlank()) throw Exception("Param '$name' cannot be blank.")
+        }
+        (annotations.firstOrNull { it is MaxLength } as MaxLength?)?.let {
+            if(value.length > it.value) throw Exception("Param '$name' cannot longer than ${value.length}.")
+        }
+    }else if(value is Number) {
+        val i = value.toInt()
+        (annotations.firstOrNull { it is Range } as Range?)?.let {
+            if(i > it.max || i < it.min) throw Exception("Param '$name' must be in range [${it.min}, ${it.max}].")
+        }
+        (annotations.firstOrNull { it is Min } as Min?)?.let {
+            if(i < it.value) throw Exception("Param '$name' must be greater than ${it.value}.")
+        }
+    }
 }

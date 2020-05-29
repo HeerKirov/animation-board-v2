@@ -1,6 +1,5 @@
 package com.heerkirov.animation.component
 
-import com.heerkirov.animation.util.logger
 import org.im4java.core.ConvertCmd
 import org.im4java.core.IMOperation
 import org.springframework.beans.factory.annotation.Value

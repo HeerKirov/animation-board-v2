@@ -6,7 +6,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.test.*
 
-@ExperimentalStdlibApi
 class FormParserTest {
     @Test fun testPrimitive() {
         //基础类型测试
@@ -58,6 +57,30 @@ class FormParserTest {
         }
         assertFailsWith<BadRequestException> {
             """{"datetime": "2020-02-02 12:34:56"}""".toForm<TestType>()
+        }
+    }
+
+    @Test fun testEnum() {
+        assertEquals(TestType(enum = Enum.A),
+                """{"enum": "A"}""".toForm()
+        )
+        assertEquals(TestType(enum = Enum.B),
+                """{"enum": "B"}""".toForm()
+        )
+        assertEquals(TestType(enum = Enum.C),
+                """{"enum": "C"}""".toForm()
+        )
+        assertEquals(TestType(enum = Enum.A),
+                """{"enum": "a"}""".toForm()
+        )
+        assertFailsWith<BadRequestException> {
+            """{"enum": "D"}""".toForm<TestType>()
+        }
+        assertFailsWith<BadRequestException> {
+            """{"enum": true}""".toForm<TestType>()
+        }
+        assertFailsWith<BadRequestException> {
+            """{"enum": 0}""".toForm<TestType>()
         }
     }
 
@@ -115,11 +138,40 @@ class FormParserTest {
         }
     }
 
+    @Test fun testValid() {
+        assertEquals(TestValid(s1 = "1", s2 = "1234567890", i1 = 0, i2 = 0),
+                """{"s1": "1", "s2": "1234567890", "i1": 0, "i2": 0}""".toForm()
+        )
+        assertEquals(TestValid(i1 = -5),
+                """{"i1": -5}""".toForm()
+        )
+        assertEquals(TestValid(i1 = 5),
+                """{"i1": 5}""".toForm()
+        )
+        assertFailsWith<BadRequestException> {
+            """{"s1": " "}""".toForm<TestValid>()
+        }
+        assertFailsWith<BadRequestException> {
+            """{"s1": ""}""".toForm<TestValid>()
+        }
+        assertFailsWith<BadRequestException> {
+            """{"s2": "12345678900"}""".toForm<TestValid>()
+        }
+        assertFailsWith<BadRequestException> {
+            """{"i1": "-6"}""".toForm<TestValid>()
+        }
+        assertFailsWith<BadRequestException> {
+            """{"i1": "6"}""".toForm<TestValid>()
+        }
+        assertFailsWith<BadRequestException> {
+            """{"i2": "-1"}""".toForm<TestValid>()
+        }
+    }
+
     private inline fun <reified T: Any> String.toForm(): T {
         return mapForm(this.parseJsonNode(), T::class)
     }
 
-    @Form
     data class TestUser(@Field("name") val name: String,
                         @Field("age") val age: Int?,
                         @Field("address") val address: String? = null,
@@ -130,12 +182,21 @@ class FormParserTest {
                         @Field("array") val array: List<Int> = arrayListOf(),
                         @Field("map") val map: Map<String, Any?> = mapOf())
 
-    @Form
     data class TestType(@Field("int") val int: Int? = null,
                         @Field("long") val long: Long? = null,
                         @Field("float") val float: Float? = null,
                         @Field("double") val double: Double? = null,
                         @Field("string") val string: String? = null,
                         @Field("date") val date: LocalDate? = null,
-                        @Field("datetime") val datetime: LocalDateTime? = null)
+                        @Field("datetime") val datetime: LocalDateTime? = null,
+                        @Field("enum") val enum: Enum? = null)
+
+    data class TestValid(@NotBlank val s1: String? = null,
+                         @MaxLength(10) val s2: String? = null,
+                         @Range(min = -5, max = 5) val i1: Int? = null,
+                         @Min(0) val i2: Int? = null)
+
+    enum class Enum {
+        A, B, C
+    }
 }
