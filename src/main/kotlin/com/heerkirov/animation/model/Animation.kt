@@ -4,7 +4,7 @@ import com.heerkirov.animation.enums.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-data class Animation(val id: Long,
+data class Animation(val id: Int,
                      val title: String,
                      val originTitle: String?,
                      val otherTitle: String?,

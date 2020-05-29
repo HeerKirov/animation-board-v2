@@ -31,8 +31,8 @@ CREATE TABLE animation(
     duration INTEGER,                               -- 平均单话时长
     sum_quantity INTEGER,                           -- 总集数
     published_quantity INTEGER,                     -- 已发布的集数
-    published_record TIMESTAMP[] NOT NULL,          -- 已发布的集数时间点
-    publish_plan TIMESTAMP[] NOT NULL,              -- 后续的发布计划时间点
+    published_record JSONB NOT NULL,                -- 已发布的集数时间点
+    publish_plan JSONB NOT NULL,                    -- 后续的发布计划时间点
     -- 描述信息
     introduction TEXT,                              -- 内容介绍
     keyword VARCHAR(255),                           -- 关键词
@@ -58,19 +58,23 @@ CREATE TABLE tag(
     creator INTEGER NOT NULL,                       -- 条目创建者
     updater INTEGER NOT NULL                        -- 条目上次更新者
 );
+CREATE UNIQUE INDEX tag__name__index ON tag(name);
 
 CREATE TABLE staff(
     id SERIAL PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
     origin_name VARCHAR(64),
     remark VARCHAR(64),                             -- 非正式别称
+    cover VARCHAR(256) DEFAULT NULL,                -- 头像文件名称
     is_organization BOOLEAN NOT NULL,               -- 此STAFF是组织而非个人
+    occupation SMALLINT DEFAULT NULL,               -- 此STAFF的职业或行业
 
     create_time TIMESTAMP NOT NULL,                 -- 条目创建时间
     update_time TIMESTAMP NOT NULL,                 -- 条目上次更新时间
     creator INTEGER NOT NULL,                       -- 条目创建者
     updater INTEGER NOT NULL                        -- 条目上次更新者
 );
+CREATE UNIQUE INDEX staff__name__index ON staff(name);
 
 CREATE TABLE animation_staff_relation(              -- staff & animation关联
     id BIGSERIAL PRIMARY KEY,

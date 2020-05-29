@@ -14,3 +14,7 @@ enum class RelationType(val level: Int, private val storage: Boolean = true) {
 
     val title: String get() = if(storage) name.toLowerCase() else throw RuntimeException("$name cannot be storage and print.")
 }
+
+fun String.toRelationType(): RelationType {
+    return RelationType.valueOf(this.toUpperCase())
+}

@@ -13,7 +13,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 class HttpAspect {
     private val log = logger<HttpAspect>()
 
-    @Around("execution(* com.heerkirov.animation.controller..*(..))")
+    @Around("execution(* com.heerkirov.animation.controller..*(..))") @Throws(Throwable::class)
     fun handle(joinPoint: ProceedingJoinPoint): Any? {
         val attributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes?
         val request = attributes!!.request

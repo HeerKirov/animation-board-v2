@@ -5,12 +5,15 @@ import com.heerkirov.animation.enums.PublishType
 import com.heerkirov.animation.enums.SexLimitLevel
 import com.heerkirov.animation.enums.ViolenceLimitLevel
 import com.heerkirov.animation.model.Animation
+import com.heerkirov.animation.util.ktorm.DateTimeListConverter
+import com.heerkirov.animation.util.ktorm.RelationConverter
 import com.heerkirov.animation.util.ktorm.enum
+import com.heerkirov.animation.util.ktorm.json
 import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 
 object Animations : BaseTable<Animation>("animation") {
-    val id by long("id").primaryKey()
+    val id by int("id").primaryKey()
     val title by varchar("title")
     val originTitle by varchar("origin_title")
     val otherTitle by varchar("other_title")
@@ -21,8 +24,8 @@ object Animations : BaseTable<Animation>("animation") {
     val duration by int("duration")
     val sumQuantity by int("sum_quantity")
     val publishedQuantity by int("published_quantity")
-    //TODO val publishedRecord by
-    //TODO val publishPlan by
+    val publishedRecord by json("published_record", DateTimeListConverter())
+    val publishPlan by json("publish_plan", DateTimeListConverter())
 
     val introduction by text("introduction")
     val keyword by varchar("keyword")
@@ -30,8 +33,8 @@ object Animations : BaseTable<Animation>("animation") {
     val violenceLimitLevel by enum("violence_limit_level", typeRef<ViolenceLimitLevel>())
     val originalWorkType by enum("original_work_type", typeRef<OriginalWorkType>())
 
-    //TODO val relations by
-    //TODO val relationsTopology by
+    val relations by json("relations", RelationConverter())
+    val relationsTopology by json("relations_topology", RelationConverter())
 
     val createTime by datetime("create_time")
     val updateTime by datetime("update_time")
@@ -49,19 +52,18 @@ object Animations : BaseTable<Animation>("animation") {
             duration = row[duration],
             sumQuantity = row[sumQuantity],
             publishedQuantity = row[publishedQuantity],
-            publishedRecord = TODO(),
-            publishPlan = TODO(),
+            publishedRecord = row[publishedRecord]!!,
+            publishPlan = row[publishPlan]!!,
             introduction = row[introduction],
             keyword = row[keyword],
             sexLimitLevel = row[sexLimitLevel],
             violenceLimitLevel = row[violenceLimitLevel],
             originalWorkType = row[originalWorkType],
-            relations = TODO(),
-            relationsTopology = TODO(),
+            relations = row[relations]!!,
+            relationsTopology = row[relationsTopology]!!,
             createTime = row[createTime]!!,
             updateTime = row[updateTime]!!,
             creator = row[creator]!!,
             updater = row[updater]!!
     )
-
 }

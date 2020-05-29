@@ -1,4 +1,4 @@
-package com.heerkirov.animation.authorization
+package com.heerkirov.animation.aspect.authorization
 
 import com.heerkirov.animation.model.User
 import org.springframework.core.MethodParameter

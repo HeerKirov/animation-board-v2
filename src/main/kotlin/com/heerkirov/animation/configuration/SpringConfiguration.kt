@@ -1,6 +1,7 @@
 package com.heerkirov.animation.configuration
 
-import com.heerkirov.animation.authorization.AuthorizationResolver
+import com.heerkirov.animation.aspect.authorization.AuthorizationResolver
+import com.heerkirov.animation.aspect.validation.ValidationResolver
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport
@@ -8,6 +9,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupp
 @Configuration
 class SpringConfiguration : WebMvcConfigurationSupport() {
     override fun addArgumentResolvers(argumentResolvers: MutableList<HandlerMethodArgumentResolver>) {
-        argumentResolvers.add(AuthorizationResolver())
+        argumentResolvers.apply {
+            add(AuthorizationResolver())
+            add(ValidationResolver())
+        }
     }
 }

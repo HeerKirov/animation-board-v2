@@ -1,4 +1,4 @@
-package com.heerkirov.animation.authorization
+package com.heerkirov.animation.aspect.authorization
 
 import com.heerkirov.animation.exception.AuthenticationException
 import com.heerkirov.animation.enums.ErrCode
@@ -44,8 +44,10 @@ class AuthorizationAspect(@Autowired private val authService: AuthService,
             }
         }
 
-        val user = if(token == null) null else {
-            authenticate(token, authorization.staff)
+        val user = if(token == null) null else { authenticate(token) }
+
+        if(authorization.staff && user?.isStaff == false && authorization.forge) {
+            throw ForbiddenException(ErrCode.FORBIDDEN, "Forbidden.")
         }
 
         for (i in method.parameters.indices) {
@@ -63,12 +65,8 @@ class AuthorizationAspect(@Autowired private val authService: AuthService,
         return joinPoint.proceed(args)
     }
 
-    private fun authenticate(token: String, requiredStaff: Boolean): User? {
+    private fun authenticate(token: String): User? {
         val username = authService.authenticate(token)
-        val user = userService.get(username)
-        if(requiredStaff && !user.isStaff) {
-            throw ForbiddenException(ErrCode.FORBIDDEN, "Forbidden.")
-        }
-        return user
+        return userService.get(username)
     }
 }
