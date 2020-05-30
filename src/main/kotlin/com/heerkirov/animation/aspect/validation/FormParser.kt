@@ -48,7 +48,7 @@ private fun <T : Any> mapAny(jsonNode: JsonNode?, kType: KType): Any? {
             val keyType = kType.arguments[0].type!!
             val valueType = kType.arguments[1].type!!
             try {
-                jsonNode.fields().map { entry -> Pair(mapStringKey(entry.key, keyType), mapAny<Any>(entry.value, valueType)) }.toMap()
+                jsonNode.fields().map { entry -> Pair(mapString(entry.key, keyType), mapAny<Any>(entry.value, valueType)) }.toMap()
             }catch (e: NullPointerException) {
                 throw ClassCastException("Value of object cannot be null.")
             }
@@ -95,7 +95,7 @@ private fun <T : Any> mapAny(jsonNode: JsonNode?, kType: KType): Any? {
                 throw ClassCastException(e.message)
             }
         }
-        kClass == Any::class -> mapAnyValue(jsonNode)
+        kClass == Any::class -> mapAnyWithoutType(jsonNode)
         kClass.isData -> {
             //提取非空参数，进行递归解析
             if(jsonNode.nodeType != JsonNodeType.OBJECT) throw ClassCastException("Excepted type is ${JsonNodeType.OBJECT} but actual type is ${jsonNode.nodeType}.")
@@ -115,14 +115,20 @@ private fun <T : Any> mapAny(jsonNode: JsonNode?, kType: KType): Any? {
     }
 }
 
-private fun mapStringKey(string: String, kType: KType): Any? {
+/**
+ * 执行将string类型按照kType定义转换为任意object的过程。
+ */
+fun mapString(string: String, kType: KType): Any? {
     @Suppress("UNCHECKED_CAST")
     val kClass = kType.classifier as KClass<*>
     @Suppress("UNCHECKED_CAST")
     return when (kClass) {
-        String::class -> {
-            string
-        }
+        String::class -> string
+        Int::class -> string.toIntOrNull() ?: throw ClassCastException("Expected number type of Int.")
+        Long::class -> string.toLongOrNull() ?: throw ClassCastException("Expected number type of Long.")
+        Float::class -> string.toFloatOrNull() ?: throw ClassCastException("Expected number type of Float.")
+        Double::class -> string.toDoubleOrNull() ?: throw ClassCastException("Expected number type of Double.")
+        Boolean::class -> string.toBoolean()
         LocalDateTime::class -> {
             try {
                 string.toDateTime()
@@ -141,7 +147,10 @@ private fun mapStringKey(string: String, kType: KType): Any? {
     }
 }
 
-private fun mapAnyValue(jsonNode: JsonNode): Any {
+/**
+ * 执行将任意jsonNode在未知类型情况下自动转换为object的过程。
+ */
+private fun mapAnyWithoutType(jsonNode: JsonNode): Any {
     return when(jsonNode.nodeType) {
         JsonNodeType.NUMBER -> if(jsonNode.isInt || jsonNode.isLong) {
             jsonNode.asInt()
@@ -205,6 +214,9 @@ fun <T : Any> mapForm(jsonNode: JsonNode, formClass: KClass<T>): T {
     return constructor.callBy(args)
 }
 
+/**
+ * 解析附带的validation检验注解，并执行检验。
+ */
 private fun analyseValidation(annotations: List<Annotation>, name: String, value: Any) {
     if(value is String) {
         (annotations.firstOrNull { it is NotBlank } as NotBlank?)?.let {

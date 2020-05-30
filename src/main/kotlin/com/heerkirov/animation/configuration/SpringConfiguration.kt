@@ -1,10 +1,12 @@
 package com.heerkirov.animation.configuration
 
+import com.heerkirov.animation.aspect.HttpLogInterceptor
 import com.heerkirov.animation.aspect.authorization.AuthorizationResolver
 import com.heerkirov.animation.aspect.filter.FilterResolver
 import com.heerkirov.animation.aspect.validation.ValidationResolver
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport
 
 @Configuration
@@ -15,5 +17,9 @@ class SpringConfiguration : WebMvcConfigurationSupport() {
             add(ValidationResolver())
             add(FilterResolver())
         }
+    }
+
+    override fun addInterceptors(registry: InterceptorRegistry) {
+        registry.addInterceptor(HttpLogInterceptor()).addPathPatterns("/api/**")
     }
 }
