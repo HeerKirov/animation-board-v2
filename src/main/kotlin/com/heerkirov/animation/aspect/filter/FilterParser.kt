@@ -11,6 +11,11 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.KType
 import kotlin.reflect.full.primaryConstructor
 
+/* filter parser后续可优化方向
+    - search参数支持自动切割和查询参数生成
+    - 所有参数支持kotlin原生默认值(isOptional)
+ */
+
 fun parseFilterObject(p: MethodParameter, kClass: KClass<*>, parameterMap: Map<String, Array<String>>): Any {
     val constructor = kClass.primaryConstructor!!
 

@@ -5,23 +5,47 @@ import com.heerkirov.animation.dao.Staffs
 import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.exception.NotFoundException
-import com.heerkirov.animation.form.StaffForm
-import com.heerkirov.animation.model.Staff
-import com.heerkirov.animation.model.User
+import com.heerkirov.animation.model.filter.StaffFilter
+import com.heerkirov.animation.model.result.ListResult
+import com.heerkirov.animation.model.form.StaffForm
+import com.heerkirov.animation.model.result.toListResult
+import com.heerkirov.animation.model.data.Staff
+import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.service.StaffService
 import com.heerkirov.animation.util.DateTimeUtil
+import com.heerkirov.animation.util.OrderTranslator
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import me.liuwj.ktorm.entity.find
 import me.liuwj.ktorm.entity.sequenceOf
-import me.liuwj.ktorm.entity.toList
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
 class StaffServiceImpl(@Autowired private val database: Database) : StaffService {
-    override fun list(): List<Staff> {
-        return database.sequenceOf(Staffs).toList()
+    private val orderTranslator = OrderTranslator {
+        "name" to Staffs.name
+        "create_time" to Staffs.createTime
+        "update_time" to Staffs.updateTime
+    }
+
+    override fun list(filter: StaffFilter): ListResult<Staff> {
+        return database.from(Staffs).select()
+                .whereWithConditions {
+                    if(filter.search != null) {
+                        val s = "%${filter.search}%"
+                        it += (Staffs.name like s) or (Staffs.originName like s) or (Staffs.remark like s)
+                    }
+                    if(filter.isOrganization != null) {
+                        it += Staffs.isOrganization eq filter.isOrganization
+                    }
+                    if(filter.occupation != null) {
+                        it += Staffs.occupation eq filter.occupation
+                    }
+                }
+                .orderBy(*filter.order.map { orderTranslator[it.second, it.first] }.toTypedArray())
+                .limit(filter.offset ?: 0, filter.limit ?: 0)
+                .toListResult { Staffs.createEntity(it) }
     }
 
     override fun get(id: Int): Staff {

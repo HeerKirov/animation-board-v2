@@ -3,7 +3,7 @@ package com.heerkirov.animation.aspect.authorization
 import com.heerkirov.animation.exception.AuthenticationException
 import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.exception.ForbiddenException
-import com.heerkirov.animation.model.User
+import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.service.AuthService
 import com.heerkirov.animation.service.UserService
 import org.aspectj.lang.ProceedingJoinPoint

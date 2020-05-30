@@ -2,7 +2,7 @@ package com.heerkirov.animation.aspect
 
 import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.exception.*
-import com.heerkirov.animation.form.ErrResult
+import com.heerkirov.animation.model.result.ErrResult
 import com.heerkirov.animation.util.logger
 import org.slf4j.Logger
 import org.springframework.http.HttpStatus
@@ -39,6 +39,7 @@ class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun exception(e: Throwable): ErrResult {
         log.error("error occurred. ", e)
-        return ErrResult(ErrCode.INTERNAL_SERVER_ERROR, e.message ?: "Internal server error")
+        return ErrResult(ErrCode.INTERNAL_SERVER_ERROR, e.message
+                ?: "Internal server error")
     }
 }

@@ -1,4 +1,4 @@
-package com.heerkirov.animation.model
+package com.heerkirov.animation.model.data
 
 import java.time.LocalDateTime
 

@@ -3,11 +3,11 @@ package com.heerkirov.animation.controller
 import com.heerkirov.animation.aspect.authorization.Authorization
 import com.heerkirov.animation.aspect.authorization.UserIdentity
 import com.heerkirov.animation.aspect.validation.Body
-import com.heerkirov.animation.form.SettingForm
-import com.heerkirov.animation.form.IsStaffRes
-import com.heerkirov.animation.form.toRes
-import com.heerkirov.animation.form.toModel
-import com.heerkirov.animation.model.User
+import com.heerkirov.animation.model.form.SettingForm
+import com.heerkirov.animation.model.form.toModel
+import com.heerkirov.animation.model.data.User
+import com.heerkirov.animation.model.result.IsStaffRes
+import com.heerkirov.animation.model.result.toRes
 import com.heerkirov.animation.service.UserService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*

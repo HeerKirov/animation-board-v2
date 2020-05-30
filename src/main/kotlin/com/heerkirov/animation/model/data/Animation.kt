@@ -1,4 +1,4 @@
-package com.heerkirov.animation.model
+package com.heerkirov.animation.model.data
 
 import com.heerkirov.animation.enums.*
 import java.time.LocalDate

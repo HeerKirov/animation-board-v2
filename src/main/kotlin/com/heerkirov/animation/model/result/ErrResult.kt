@@ -1,4 +1,4 @@
-package com.heerkirov.animation.form
+package com.heerkirov.animation.model.result
 
 import com.heerkirov.animation.exception.ApiException
 import com.heerkirov.animation.enums.ErrCode

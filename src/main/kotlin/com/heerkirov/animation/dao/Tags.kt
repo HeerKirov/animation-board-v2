@@ -1,6 +1,6 @@
 package com.heerkirov.animation.dao
 
-import com.heerkirov.animation.model.Tag
+import com.heerkirov.animation.model.data.Tag
 import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 

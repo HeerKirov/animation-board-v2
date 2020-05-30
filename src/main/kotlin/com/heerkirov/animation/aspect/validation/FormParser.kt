@@ -122,25 +122,33 @@ fun mapString(string: String, kType: KType): Any? {
     @Suppress("UNCHECKED_CAST")
     val kClass = kType.classifier as KClass<*>
     @Suppress("UNCHECKED_CAST")
-    return when (kClass) {
-        String::class -> string
-        Int::class -> string.toIntOrNull() ?: throw ClassCastException("Expected number type of Int.")
-        Long::class -> string.toLongOrNull() ?: throw ClassCastException("Expected number type of Long.")
-        Float::class -> string.toFloatOrNull() ?: throw ClassCastException("Expected number type of Float.")
-        Double::class -> string.toDoubleOrNull() ?: throw ClassCastException("Expected number type of Double.")
-        Boolean::class -> string.toBoolean()
-        LocalDateTime::class -> {
+    return when {
+        kClass == String::class -> string
+        kClass == Int::class -> string.toIntOrNull() ?: throw ClassCastException("Expected number type of Int.")
+        kClass == Long::class -> string.toLongOrNull() ?: throw ClassCastException("Expected number type of Long.")
+        kClass == Float::class -> string.toFloatOrNull() ?: throw ClassCastException("Expected number type of Float.")
+        kClass == Double::class -> string.toDoubleOrNull() ?: throw ClassCastException("Expected number type of Double.")
+        kClass == Boolean::class -> string.toBoolean()
+        kClass == LocalDateTime::class -> {
             try {
                 string.toDateTime()
             }catch (e: DateTimeParseException) {
                 throw ClassCastException(e.message)
             }
         }
-        LocalDate::class -> {
+        kClass == LocalDate::class -> {
             try {
                 string.toDate()
             }catch (e: DateTimeParseException) {
                 throw ClassCastException(e.message)
+            }
+        }
+        kClass.isSubclassOf(Enum::class) -> {
+            val valueOf = kClass.java.getDeclaredMethod("valueOf", String::class.java)
+            try {
+                valueOf(null, string.toUpperCase())
+            }catch (e: Exception) {
+                throw ClassCastException("Cannot convert '$string' to enum type ${kClass.simpleName}.")
             }
         }
         else -> throw IllegalArgumentException("Cannot analyse argument of type '$kClass'.")

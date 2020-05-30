@@ -1,4 +1,4 @@
-package com.heerkirov.animation.model
+package com.heerkirov.animation.model.data
 
 data class User(val id: Int,
                 val username: String,

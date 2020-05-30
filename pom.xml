@@ -58,6 +58,11 @@
 			<artifactId>ktorm-core</artifactId>
 			<version>${ktorm.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>me.liuwj.ktorm</groupId>
+			<artifactId>ktorm-support-postgresql</artifactId>
+			<version>${ktorm.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.postgresql</groupId>

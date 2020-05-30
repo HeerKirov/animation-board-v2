@@ -4,7 +4,7 @@ import com.heerkirov.animation.enums.OriginalWorkType
 import com.heerkirov.animation.enums.PublishType
 import com.heerkirov.animation.enums.SexLimitLevel
 import com.heerkirov.animation.enums.ViolenceLimitLevel
-import com.heerkirov.animation.model.Animation
+import com.heerkirov.animation.model.data.Animation
 import com.heerkirov.animation.util.ktorm.DateTimeListConverter
 import com.heerkirov.animation.util.ktorm.RelationConverter
 import com.heerkirov.animation.util.ktorm.enum

@@ -1,7 +1,7 @@
 package com.heerkirov.animation.dao
 
 import com.heerkirov.animation.enums.StaffOccupation
-import com.heerkirov.animation.model.Staff
+import com.heerkirov.animation.model.data.Staff
 import com.heerkirov.animation.util.ktorm.enum
 import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*

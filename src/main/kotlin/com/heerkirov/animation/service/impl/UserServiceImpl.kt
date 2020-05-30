@@ -1,8 +1,8 @@
 package com.heerkirov.animation.service.impl
 
 import com.heerkirov.animation.dao.Users
-import com.heerkirov.animation.model.User
-import com.heerkirov.animation.model.UserSetting
+import com.heerkirov.animation.model.data.User
+import com.heerkirov.animation.model.data.UserSetting
 import com.heerkirov.animation.service.AuthService
 import com.heerkirov.animation.service.UserService
 import me.liuwj.ktorm.database.Database
