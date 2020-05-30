@@ -14,6 +14,7 @@ import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.service.StaffService
 import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.OrderTranslator
+import com.heerkirov.animation.util.orderBy
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import me.liuwj.ktorm.entity.find
@@ -43,7 +44,7 @@ class StaffServiceImpl(@Autowired private val database: Database) : StaffService
                         it += Staffs.occupation eq filter.occupation
                     }
                 }
-                .orderBy(*filter.order.map { orderTranslator[it.second, it.first] }.toTypedArray())
+                .orderBy(filter.order, orderTranslator)
                 .limit(filter.offset ?: 0, filter.limit ?: 0)
                 .toListResult { Staffs.createEntity(it) }
     }

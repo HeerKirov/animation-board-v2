@@ -14,6 +14,7 @@ import com.heerkirov.animation.model.result.toListResult
 import com.heerkirov.animation.service.TagService
 import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.OrderTranslator
+import com.heerkirov.animation.util.orderBy
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import me.liuwj.ktorm.entity.find
@@ -37,7 +38,7 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
                         it += Tags.name like "%${filter.search}%"
                     }
                 }
-                .orderBy(*filter.order.map { orderTranslator[it.second, it.first] }.toTypedArray())
+                .orderBy(filter.order, orderTranslator)
                 .limit(filter.offset ?: 0, filter.limit ?: 0)
                 .toListResult { Tags.createEntity(it) }
     }

@@ -107,18 +107,18 @@ private fun parseOrderParameter(order: Order, kType: KType, parameterValues: Arr
 
     val parameterPairs = when {
         //用户填写的字段不为空值
-        parameterValues.isNotEmpty() -> parameterValues.map(::mapOrderPair).let {
+        parameterValues.isNotEmpty() -> parameterValues.asSequence().map(::mapOrderPair).let {
             if(options != null) {
                 //在存在可选项的情况下，需要对每一项进行比对，匹配的项取其原拼写放回，一旦不匹配就抛出异常
-                it.map { pair ->
-                    val match = options[if(order.ignoreCase) pair.second.toLowerCase() else pair.second]
+                it.map { (direction, field) ->
+                    val match = options[if(order.ignoreCase) field.toLowerCase() else field]
                             ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param '${order.value}' must be in [${options.values.joinToString(", ")}].")
-                    Pair(pair.first, match)
+                    Pair(direction, match)
                 }
             }else{
                 it
             }
-        }
+        }.toList()
         //用户没有填写，但是存在默认值
         order.default.isNotBlank() -> arrayListOf(mapOrderPair(order.default))
         //否则就直接返回null
@@ -127,7 +127,7 @@ private fun parseOrderParameter(order: Order, kType: KType, parameterValues: Arr
 
     //最后根据Pair的泛型参数顺序做调整
     return if(si) {
-        parameterPairs.map { Pair(it.second, it.first) }
+        parameterPairs.map { (direction, field) -> Pair(field, direction) }
     }else{
         parameterPairs
     }
