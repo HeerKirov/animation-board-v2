@@ -1,6 +1,8 @@
 package com.heerkirov.animation.enums
 
-enum class RelationType(val level: Int, private val storage: Boolean = true) {
+import com.heerkirov.animation.util.relation.IRelation
+
+enum class RelationType(val level: Int, private val storage: Boolean = true) : IRelation<RelationType> {
     PREV(4),            //前作
     NEXT(4),            //续作
     FANWAI(3),          //番外篇
@@ -13,6 +15,18 @@ enum class RelationType(val level: Int, private val storage: Boolean = true) {
     SELF(6, false);
 
     val title: String get() = if(storage) name.toLowerCase() else throw RuntimeException("$name cannot be storage and print.")
+
+    override fun spread(r: RelationType): RelationType {
+        TODO("Not yet implemented")
+    }
+
+    override fun reverse(): RelationType {
+        TODO("Not yet implemented")
+    }
+
+    override fun compareTo(r: RelationType): Int {
+        return this.level.compareTo(r.level)
+    }
 }
 
 fun String.toRelationType(): RelationType {

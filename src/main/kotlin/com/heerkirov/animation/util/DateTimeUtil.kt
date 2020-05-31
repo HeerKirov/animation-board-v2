@@ -4,6 +4,7 @@ import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.regex.Pattern
 
 private val dateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
@@ -21,6 +22,11 @@ object DateTimeUtil {
 fun String.toDate(): LocalDate = LocalDate.parse(this, dateFormat)
 
 fun String.toDateTime(): LocalDateTime = LocalDateTime.parse(this, dateTimeFormat)
+
+fun String.toDateMonth(): LocalDate? {
+    val (year, month) = this.toYearAndMonth() ?: return null
+    return LocalDate.of(year, month ?: return null, 1)
+}
 
 fun LocalDate.toDateMonthString(): String = this.format(monthFormat)
 

@@ -36,7 +36,8 @@ data class AnimationDetailRes(val id: Int,
 
                               val tags: List<TagRes>,
                               val staffs: List<StaffRelationRes>,
-                              val relations: List<AnimationRelationRes>,
+                              val relations: Map<RelationType, List<Int>>,
+                              @JsonProperty("relations_topology") val relationsTopology: List<AnimationRelationRes>,
 
                               @JsonProperty("create_time") val createTime: String,
                               @JsonProperty("update_time") val updateTime: String)
@@ -71,6 +72,7 @@ fun AnimationResult.toDetailRes(): AnimationDetailRes {
             animation.originalWorkType,
             tags,
             staffs,
+            animation.relations,
             relations,
             animation.createTime.toDateTimeString(),
             animation.updateTime.toDateTimeString())
