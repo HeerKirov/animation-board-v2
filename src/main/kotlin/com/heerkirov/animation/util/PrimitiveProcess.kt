@@ -13,3 +13,24 @@ fun <T> Iterable<Iterable<T>>.reduce(): List<T> {
     }
     return list
 }
+
+fun <T> Iterable<T>.filterInto(predicate: (T) -> Boolean): Pair<List<T>, List<T>> {
+    val trueList = ArrayList<T>()
+    val falseList = ArrayList<T>()
+    for (element in this) {
+        if(predicate(element)) {
+            trueList.add(element)
+        }else{
+            falseList.add(element)
+        }
+    }
+    return Pair(trueList, falseList)
+}
+
+fun <T> T.runIf(predicate: Boolean, transform: (T) -> T): T {
+    return if(predicate) {
+        transform(this)
+    }else{
+        this
+    }
+}

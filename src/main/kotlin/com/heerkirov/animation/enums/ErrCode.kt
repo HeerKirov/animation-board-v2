@@ -13,6 +13,7 @@ enum class ErrCode {
     PARAM_REQUIRED,         //400 必选参数
     INVALID_OPERATION,      //400 无效的操作
     ALREADY_EXISTS,         //400 已经存在的资源
+    NOT_EXISTS,             //400 找不到资源
     NOT_FOUND,              //404 找不到资源
     INTERNAL_SERVER_ERROR   //500 内部错误
 }

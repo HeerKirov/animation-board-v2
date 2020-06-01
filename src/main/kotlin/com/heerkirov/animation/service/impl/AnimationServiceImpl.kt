@@ -122,19 +122,24 @@ class AnimationServiceImpl(@Autowired private val database: Database,
                 .where { AnimationStaffRelations.animationId eq id }
                 .map { StaffRelationRes(it[Staffs.id]!!, it[Staffs.name]!!, it[Staffs.cover], it[Staffs.isOrganization]!!, it[Staffs.occupation], it[AnimationStaffRelations.staffType]!!) }
 
-        val relationMaps = animation.relationsTopology.entries
+        val relationIds = animation.relationsTopology.entries
                 .sortedBy { -it.key.level }
-                .flatMap { entry -> entry.value.map { Pair(it, entry.key) } }.toMap()
-        val relations = if(relationMaps.isNotEmpty()) {
+                .flatMap { entry -> entry.value.map { Pair(entry.key, it) } }
+        val relationMaps = if(relationIds.isNotEmpty()) {
             database.from(Animations)
                     .select(Animations.id, Animations.title, Animations.cover)
-                    .where { Animations.id inList relationMaps.keys }
+                    .where { Animations.id inList relationIds.map { (_, id) -> id } }
                     .map {
                         val animationId = it[Animations.id]!!
-                        AnimationRelationRes(animationId, it[Animations.title]!!, it[Animations.cover], relationMaps[animationId] ?: error("Cannot find relation of animation $animationId."))
-                    }
+                        val res = Pair(it[Animations.title]!!, it[Animations.cover])
+                        Pair(animationId, res)
+                    }.toMap()
         }else{
-            emptyList()
+            emptyMap()
+        }
+        val relations = relationIds.map { (r, id) ->
+            val (title, cover) = relationMaps[id] ?: error("Cannot find relation of animation $id.")
+            AnimationRelationRes(id, title, cover, r)
         }
 
         return AnimationResult(animation, tags, staffs, relations)
@@ -146,13 +151,35 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             animationForm.publishTime.toDateMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' must be 'yyyy-MM'.")
         }
         val sumQuantity = animationForm.sumQuantity
-        val publishedQuantity = when {
+        //限制已发布话数：
+        //- 当sum为null时，已发布也必须为null
+        //- 已发布不能超过sum
+        var publishedQuantity = when {
             sumQuantity == null -> null
             animationForm.publishedQuantity != null && animationForm.publishedQuantity > sumQuantity -> sumQuantity
             else -> animationForm.publishedQuantity
         }
 
         val now = DateTimeUtil.now()
+
+        //publish plan的数量不能超过sum - published这个余量
+        val totalPlan = if(sumQuantity != null && publishedQuantity != null && sumQuantity - publishedQuantity < animationForm.publishPlan.size) {
+            animationForm.publishPlan.subList(0, sumQuantity - publishedQuantity)
+        }else{
+            animationForm.publishPlan
+        }
+        //对plan进行排序，然后分割成已完成计划和未完成计划
+        //已完成计划直接作为published record，并且其size加到published上
+        //未完成计划作为实际的publish plan
+        val (publishPlan, publishedPlan) = totalPlan.sorted().filterInto { it > now }
+        if(publishedPlan.isNotEmpty()) {
+            if(publishedQuantity != null) {
+                publishedQuantity += publishedPlan.size
+            }else{
+                //published为null时当作0直接加上size
+                publishedQuantity = publishedPlan.size
+            }
+        }
 
         val id = database.insertAndGenerateKey(Animations) {
             it.title to animationForm.title
@@ -163,10 +190,8 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             it.duration to animationForm.duration
             it.sumQuantity to sumQuantity
             it.publishedQuantity to publishedQuantity
-            it.publishedRecord to emptyList()
-            //TODO 在创建/更新时就可以处理plan，使生效内容加入record，而不是等到schedule执行时
-            //      控制plan的计划数量不得超过sumQuantity
-            it.publishPlan to animationForm.publishPlan
+            it.publishedRecord to publishedPlan
+            it.publishPlan to publishPlan
             it.introduction to animationForm.introduction
             it.keyword to animationForm.keyword
             it.sexLimitLevel to animationForm.sexLimitLevel
@@ -178,14 +203,14 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             it.updateTime to now
             it.creator to creator.id
             it.updater to creator.id
+        } as Int
+        //TODO tag & staff
+
+        if(animationForm.relations.isNotEmpty()) {
+            relationProcessor.updateRelationTopology(id, animationForm.relations)
         }
 
-        return id as Int
-    }
-
-    @Transactional
-    override fun update(id: Int, animationForm: AnimationForm, updater: User) {
-        TODO("Not yet implemented")
+        return id
     }
 
     @Transactional

@@ -9,11 +9,15 @@ import kotlin.collections.HashSet
 
 class RelationGraph<E: Any, R: IRelation<R>>(private val elements: Array<E>, initializer: RelationGraph<E, R>.Builder.() -> Unit) {
     //以二维数组表示的，index为[from][to]的entity之间的关系
-    private val map: ArrayList<ArrayList<R?>> = ArrayList(IntRange(0, elements.size).map {
-        ArrayList(IntRange(0, elements.size).map {
-            null
-        })
-    })
+    private val map: ArrayList<ArrayList<R?>> = ArrayList<ArrayList<R?>>().also { row ->
+        for (i in elements.indices) {
+            row.add(ArrayList<R?>().also { col ->
+                for (j in elements.indices) {
+                    col.add(null)
+                }
+            })
+        }
+    }
 
     //将entity的hashCode映射到其index
     private val hashMapper: HashMap<Int, Int> = HashMap(elements.size)
@@ -40,7 +44,11 @@ class RelationGraph<E: Any, R: IRelation<R>>(private val elements: Array<E>, ini
         fun addRelation(from: E, relation: R, to: E) {
             val fromIndex = hashMapper[from.hashCode()] ?: throw NoSuchElementException("From element is not in graph.")
             val toIndex = hashMapper[to.hashCode()] ?: throw NoSuchElementException("To element is not in graph.")
-            map[fromIndex][toIndex] = relation
+            val oldFromToValue = map[fromIndex][toIndex]
+            if(oldFromToValue == null || oldFromToValue.level < relation.level) map[fromIndex][toIndex] = relation
+            val reverseRelation = -relation
+            val oldToFromValue = map[toIndex][fromIndex]
+            if(oldToFromValue == null || oldToFromValue.level < reverseRelation.level) map[toIndex][fromIndex] = reverseRelation
         }
     }
 
@@ -52,9 +60,14 @@ class RelationGraph<E: Any, R: IRelation<R>>(private val elements: Array<E>, ini
         val been = HashSet<Int>()
         //BFS的队列
         val queue = LinkedList<Int>()
-        //将初始节点加入
+        //处理初始节点
         been.add(thisIndex)
-        queue.add(thisIndex)
+        map[thisIndex].forEachIndexed { goalIndex, relationOfThisToGoal ->
+            if(relationOfThisToGoal != null) {
+                queue.add(goalIndex)
+                been.add(goalIndex)
+            }
+        }
 
         while(queue.isNotEmpty()) {
             val currentIndex = queue.pop()
@@ -65,7 +78,7 @@ class RelationGraph<E: Any, R: IRelation<R>>(private val elements: Array<E>, ini
                 if(relationOfCurrentToGoal != null) {
                     //根据this->current和current->goal的关系，计算this->goal的关系
                     val relationOfThisToGoal = if(thisIndex == currentIndex) { relationOfCurrentToGoal }else{
-                        relationOfThisToCurrent.spread(relationOfCurrentToGoal)
+                        relationOfThisToCurrent + relationOfCurrentToGoal
                     }
                     //在目标节点没有遍历过，或者在关系更新过的情况下将goal节点放入队列
                     if(putNewRelation(thisIndex, goalIndex, relationOfThisToGoal) || !been.contains(goalIndex)) {
@@ -83,9 +96,9 @@ class RelationGraph<E: Any, R: IRelation<R>>(private val elements: Array<E>, ini
     private fun putNewRelation(from: Int, to: Int, newRelation: R): Boolean {
         return if (from != to) {
             val oldRelation = map[from][to]
-            if(oldRelation == null || oldRelation < newRelation) {
+            if(oldRelation == null || oldRelation.level < newRelation.level) {
                 map[from][to] = newRelation
-                map[to][from] = newRelation.reverse()
+                map[to][from] = -newRelation
                 true
             }else{
                 false
@@ -93,5 +106,19 @@ class RelationGraph<E: Any, R: IRelation<R>>(private val elements: Array<E>, ini
         } else {
             false
         }
+    }
+
+    /**
+     * 获得图中指定节点的全量拓扑，即它对其他所有节点的关系表。
+     * 只有存在关系的节点才会被列出。
+     */
+    operator fun get(element: E): Map<R, List<E>> {
+        val relations = hashMapOf<R, ArrayList<E>>()
+        map[hashMapper[element.hashCode()]!!].forEachIndexed { index, r ->
+            if(r != null) {
+                relations.computeIfAbsent(r) { arrayListOf() }.add(elements[index])
+            }
+        }
+        return relations
     }
 }

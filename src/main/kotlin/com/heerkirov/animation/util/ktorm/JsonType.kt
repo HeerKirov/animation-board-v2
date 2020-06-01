@@ -68,7 +68,7 @@ class RelationConverter : JsonConverter<Map<RelationType, List<Int>>> {
 
     override fun setter(obj: Map<RelationType, List<Int>>): String {
         val map = HashMap<String, List<Int>>()
-        obj.map { entry -> map[entry.key.title] = entry.value }
+        obj.map { entry -> map[entry.key.name] = entry.value }
         return map.toJSONString()
     }
 }

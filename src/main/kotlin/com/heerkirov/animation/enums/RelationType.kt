@@ -2,30 +2,37 @@ package com.heerkirov.animation.enums
 
 import com.heerkirov.animation.util.relation.IRelation
 
-enum class RelationType(val level: Int, private val storage: Boolean = true) : IRelation<RelationType> {
+enum class RelationType(override val level: Int) : IRelation<RelationType> {
     PREV(4),            //前作
     NEXT(4),            //续作
     FANWAI(3),          //番外篇
     MAIN_ARTICLE(3),    //正篇
     RUMOR(2),           //外传
     TRUE_PASS(2),       //正传
-    SERIES(1),          //同系列
-    NONE(0, false),
-    DELETED(5, false),
-    SELF(6, false);
+    SERIES(1);          //同系列
 
-    val title: String get() = if(storage) name.toLowerCase() else throw RuntimeException("$name cannot be storage and print.")
-
-    override fun spread(r: RelationType): RelationType {
-        TODO("Not yet implemented")
+    override fun unaryMinus(): RelationType {
+        return when(this) {
+            PREV -> NEXT
+            NEXT -> PREV
+            FANWAI -> MAIN_ARTICLE
+            MAIN_ARTICLE -> FANWAI
+            RUMOR -> TRUE_PASS
+            TRUE_PASS -> RUMOR
+            SERIES -> SERIES
+        }
     }
 
-    override fun reverse(): RelationType {
-        TODO("Not yet implemented")
-    }
-
-    override fun compareTo(r: RelationType): Int {
-        return this.level.compareTo(r.level)
+    override fun plus(r: RelationType): RelationType {
+        return when {
+            this == r -> this
+            this == SERIES || r == SERIES || this.level == r.level -> SERIES
+            this == RUMOR || r == RUMOR -> RUMOR
+            this == TRUE_PASS || r == TRUE_PASS -> TRUE_PASS
+            this == PREV || r == PREV -> PREV
+            this == NEXT || r == NEXT -> NEXT
+            else -> throw UnsupportedOperationException("This case may not occurred.")
+        }
     }
 }
 

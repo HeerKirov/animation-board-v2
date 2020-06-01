@@ -42,13 +42,6 @@ class AnimationController(@Autowired private val animationService: AnimationServ
     }
 
     @Authorization(staff = true)
-    @PutMapping("/{id}")
-    fun update(@UserIdentity user: User, @PathVariable id: Int, @Body animationForm: AnimationForm): AnimationDetailRes {
-        animationService.update(id, animationForm, user)
-        return animationService.get(id).toDetailRes()
-    }
-
-    @Authorization(staff = true)
     @PatchMapping("/{id}")
     fun partialUpdate(@UserIdentity user: User, @PathVariable id: Int, @Body animationForm: AnimationPartialForm): AnimationDetailRes {
         animationService.partialUpdate(id, animationForm, user)

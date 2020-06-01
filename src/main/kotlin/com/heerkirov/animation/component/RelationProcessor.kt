@@ -1,12 +1,15 @@
 package com.heerkirov.animation.component
 
 import com.heerkirov.animation.dao.Animations
+import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.enums.RelationType
+import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.util.relation.RelationGraph
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 @Component
 class RelationProcessor(@Autowired private val database: Database) {
@@ -16,7 +19,8 @@ class RelationProcessor(@Autowired private val database: Database) {
      * 然后，对全量图进行关系传播推导，导出所有对象的全量拓扑，并更新那些拓扑发生变化的对象。
      * @throws NoSuchElementException 找不到指定id的animation。
      */
-    fun updateRelationTopology(animationId: Int, newRelations: Map<RelationType, List<Int>>) {
+    fun updateRelationTopology(animationId: Int, relations: Map<RelationType, List<Int>>) {
+        val newRelations = validateRelation(relations)
         //查到主对象
         val thisAnimation = find(animationId) ?: throw NoSuchElementException("Cannot find animation $animationId.")
 
@@ -46,9 +50,10 @@ class RelationProcessor(@Autowired private val database: Database) {
         elements.putAll(changesTopologyAnimations.map { Pair(it.id, it) })
 
         //根据所有在场的节点的关联拓扑(主对象的为新关联拓扑)，将关系放入图中，随后构建传播图
-        val graph = RelationGraph<AnimationModel, RelationType>(elements.values.toTypedArray()) {
+        val graph = RelationGraph<AnimationModel, RelationType>(elements.values.sortedBy { it.createTime }.toTypedArray()) {
             for (animation in elements.values) {
-                for ((relation, list) in animation.relations.entries) {
+                val r = if(animation == thisAnimation) { newRelations }else{ animation.relations }
+                for ((relation, list) in r.entries) {
                     for (i in list) {
                         addRelation(animation, relation, elements[i]!!)
                     }
@@ -59,34 +64,90 @@ class RelationProcessor(@Autowired private val database: Database) {
         //从传播图导出每一个节点的全量拓扑
         //比对每个节点的新旧全量拓扑，发生变化的放入保存列表；主对象要更新关联拓扑，也要放入保存列表
         //批量保存
-        TODO()
+        database.batchUpdate(Animations) {
+            for (element in elements.values) {
+                if(element != thisAnimation) {
+                    val newTopology = graph[element].map { (k, v) -> Pair(k, v.map { it.id }) }.toMap()
+                    if(!compareRelationEquals(element.relationsTopology, newTopology)) {
+                        item {
+                            it.relationsTopology to newTopology
+                            where { it.id eq element.id }
+                        }
+                    }
+                }
+            }
+        }
+        val newThisTopology = graph[thisAnimation].map { (k, v) -> Pair(k, v.map { it.id }) }.toMap()
+        database.update(Animations) {
+            it.relations to newRelations
+            it.relationsTopology to newThisTopology
+            where { it.id eq thisAnimation.id }
+        }
     }
 
     /**
      * 从数据库查找指定id的animation的拓扑关系。
      */
     private fun find(animationId: Int): AnimationModel? {
-        return database.from(Animations).select(Animations.relations, Animations.relationsTopology)
+        return database.from(Animations).select(Animations.relations, Animations.relationsTopology, Animations.createTime)
                 .where { Animations.id eq animationId }
                 .firstOrNull()
-                ?.let { AnimationModel(animationId, it[Animations.relations]!!, it[Animations.relationsTopology]!!) }
+                ?.let { AnimationModel(animationId, it[Animations.relations]!!, it[Animations.relationsTopology]!!, it[Animations.createTime]!!) }
     }
 
     /**
      * 从数据库查找全部id的animation的拓扑关系。
      */
     private fun findAll(animationIds: Collection<Int>): List<AnimationModel> {
-        return database.from(Animations).select(Animations.id, Animations.relations, Animations.relationsTopology)
+        if(animationIds.isEmpty()) {
+            return emptyList()
+        }
+        val rowSet = database.from(Animations).select(Animations.id, Animations.relations, Animations.relationsTopology, Animations.createTime)
                 .where { Animations.id inList animationIds }
-                .map { AnimationModel(it[Animations.id]!!, it[Animations.relations]!!, it[Animations.relationsTopology]!!) }
+                .limit(0, animationIds.size)
+        if(rowSet.totalRecords < animationIds.size) {
+            val minus = animationIds.toSet() - rowSet.map { it[Animations.id]!! }.toSet()
+            throw BadRequestException(ErrCode.NOT_EXISTS, "Animation ${minus.joinToString(", ")} not exists.")
+        }else{
+            return rowSet.map { AnimationModel(it[Animations.id]!!, it[Animations.relations]!!, it[Animations.relationsTopology]!!, it[Animations.createTime]!!) }
+        }
     }
 
-    class AnimationModel(val id: Int, val relations: Map<RelationType, List<Int>>, val relationsTopology: Map<RelationType, List<Int>>) {
+    class AnimationModel(val id: Int,
+                         val relations: Map<RelationType, List<Int>>,
+                         val relationsTopology: Map<RelationType, List<Int>>,
+                         val createTime: LocalDateTime) {
         override fun equals(other: Any?): Boolean {
             return this === other || (other is AnimationModel && this.id == other.id)
         }
 
         override fun hashCode() = id
+    }
+
+    /**
+     * 对目标拓扑进行优化整理。
+     * - 去除没有项的关系。
+     * - 移除同关系下重复的id。
+     * - 如果存在不同关系下重复的id，那么抛出异常。
+     */
+    private fun validateRelation(relations: Map<RelationType, List<Int>>): Map<RelationType, List<Int>> {
+        val map = HashMap<RelationType, List<Int>>()
+        val intSet = HashSet<Int>()
+
+        for ((r, list) in relations.entries) {
+            if(list.isNotEmpty()) {
+                val distinctList = list.distinct()
+                for (i in distinctList) {
+                    if(intSet.contains(i)) {
+                        throw BadRequestException(ErrCode.PARAM_ERROR, "Relation of animation $i is duplicated.")
+                    }
+                }
+                intSet.addAll(distinctList)
+                map[r] = distinctList
+            }
+        }
+
+        return map
     }
 
     /**
@@ -106,8 +167,8 @@ class RelationProcessor(@Autowired private val database: Database) {
     private fun compareRelationEquals(oldRelations: Map<RelationType, List<Int>>, newRelations: Map<RelationType, List<Int>>): Boolean {
         val keys = oldRelations.keys + newRelations.keys
         for (key in keys) {
-            val old = oldRelations[key]?.toHashSet() ?: emptySet()
-            val new = newRelations[key]?.toHashSet() ?: emptySet()
+            val old = oldRelations[key]?.toHashSet() ?: hashSetOf()
+            val new = newRelations[key]?.toHashSet() ?: hashSetOf()
             if(old != new) {
                 return false
             }
