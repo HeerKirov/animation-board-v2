@@ -1,6 +1,6 @@
 package com.heerkirov.animation.service.impl
 
-import com.heerkirov.animation.component.RelationProcessor
+import com.heerkirov.animation.service.manager.RelationProcessor
 import com.heerkirov.animation.dao.*
 import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.exception.BadRequestException
@@ -12,6 +12,9 @@ import com.heerkirov.animation.model.data.Animation
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.result.*
 import com.heerkirov.animation.service.AnimationService
+import com.heerkirov.animation.service.manager.AnimationProcessor
+import com.heerkirov.animation.service.manager.StaffProcessor
+import com.heerkirov.animation.service.manager.TagProcessor
 import com.heerkirov.animation.util.*
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
@@ -24,7 +27,10 @@ import java.time.LocalDate
 
 @Service
 class AnimationServiceImpl(@Autowired private val database: Database,
-                           @Autowired private val relationProcessor: RelationProcessor) : AnimationService {
+                           @Autowired private val animationProcessor: AnimationProcessor,
+                           @Autowired private val relationProcessor: RelationProcessor,
+                           @Autowired private val tagProcessor: TagProcessor,
+                           @Autowired private val staffProcessor: StaffProcessor) : AnimationService {
     private val orderTranslator = OrderTranslator {
         "publish_time" to Animations.publishTime nulls last
         "create_time" to Animations.createTime
@@ -147,38 +153,16 @@ class AnimationServiceImpl(@Autowired private val database: Database,
 
     @Transactional
     override fun create(animationForm: AnimationForm, creator: User): Int {
-        val publishTime = if(animationForm.publishTime == null) { null }else{
-            animationForm.publishTime.toDateMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' must be 'yyyy-MM'.")
-        }
-        val sumQuantity = animationForm.sumQuantity
-        //限制已发布话数：
-        //- 当sum为null时，已发布也必须为null
-        //- 已发布不能超过sum
-        var publishedQuantity = when {
-            sumQuantity == null -> null
-            animationForm.publishedQuantity != null && animationForm.publishedQuantity > sumQuantity -> sumQuantity
-            else -> animationForm.publishedQuantity
-        }
-
         val now = DateTimeUtil.now()
 
-        //publish plan的数量不能超过sum - published这个余量
-        val totalPlan = if(sumQuantity != null && publishedQuantity != null && sumQuantity - publishedQuantity < animationForm.publishPlan.size) {
-            animationForm.publishPlan.subList(0, sumQuantity - publishedQuantity)
-        }else{
-            animationForm.publishPlan
-        }
-        //对plan进行排序，然后分割成已完成计划和未完成计划
-        //已完成计划直接作为published record，并且其size加到published上
-        //未完成计划作为实际的publish plan
-        val (publishPlan, publishedPlan) = totalPlan.sorted().filterInto { it > now }
-        if(publishedPlan.isNotEmpty()) {
-            if(publishedQuantity != null) {
-                publishedQuantity += publishedPlan.size
-            }else{
-                //published为null时当作0直接加上size
-                publishedQuantity = publishedPlan.size
-            }
+        val (publishedQuantity, publishPlan, publishedRecord) = animationProcessor.processQuantityAndPlan(
+                animationForm.sumQuantity,
+                animationForm.publishedQuantity,
+                animationForm.publishPlan,
+                emptyList(), now)
+
+        val publishTime = if(animationForm.publishTime == null) { null }else{
+            animationForm.publishTime.toDateMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' must be 'yyyy-MM'.")
         }
 
         val id = database.insertAndGenerateKey(Animations) {
@@ -188,9 +172,9 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             it.publishType to animationForm.publishType
             it.publishTime to publishTime
             it.duration to animationForm.duration
-            it.sumQuantity to sumQuantity
+            it.sumQuantity to animationForm.sumQuantity
             it.publishedQuantity to publishedQuantity
-            it.publishedRecord to publishedPlan
+            it.publishedRecord to publishedRecord
             it.publishPlan to publishPlan
             it.introduction to animationForm.introduction
             it.keyword to animationForm.keyword
@@ -204,8 +188,13 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             it.creator to creator.id
             it.updater to creator.id
         } as Int
-        //TODO tag & staff
 
+        if(animationForm.tags.isNotEmpty()) {
+            tagProcessor.updateTags(id, animationForm.tags, creator, creating = true)
+        }
+        if(animationForm.staffs.isNotEmpty()) {
+            staffProcessor.updateStaffs(id, animationForm.staffs, creating = true)
+        }
         if(animationForm.relations.isNotEmpty()) {
             relationProcessor.updateRelationTopology(id, animationForm.relations)
         }

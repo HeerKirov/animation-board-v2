@@ -29,8 +29,8 @@ CREATE TABLE animation(
     publish_type SMALLINT,                          -- 放送类型
     publish_time DATE,                              -- 放送时间，以月为最小单位
     duration INTEGER,                               -- 平均单话时长
-    sum_quantity INTEGER,                           -- 总集数
-    published_quantity INTEGER,                     -- 已发布的集数
+    sum_quantity INTEGER NOT NULL DEFAULT 1,        -- 总集数
+    published_quantity INTEGER NOT NULL DEFAULT 0,  -- 已发布的集数
     published_record JSONB NOT NULL,                -- 已发布的集数时间点
     publish_plan JSONB NOT NULL,                    -- 后续的发布计划时间点
     -- 描述信息

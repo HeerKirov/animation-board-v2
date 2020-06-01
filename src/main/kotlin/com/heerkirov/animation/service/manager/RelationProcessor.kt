@@ -1,4 +1,4 @@
-package com.heerkirov.animation.component
+package com.heerkirov.animation.service.manager
 
 import com.heerkirov.animation.dao.Animations
 import com.heerkirov.animation.enums.ErrCode

@@ -12,14 +12,16 @@ data class AnimationForm(@Field("title") @NotBlank val title: String,
                          @Field("publish_type") val publishType: PublishType? = null,
                          @Field("publish_time") val publishTime: String? = null,
                          @Field("duration") @Min(0) val duration: Int? = null,
-                         @Field("sum_quantity") @Min(1) val sumQuantity: Int? = null,
-                         @Field("published_quantity") @Min(0) val publishedQuantity: Int? = null,
+                         @Field("sum_quantity") @Min(1) val sumQuantity: Int = 1,
+                         @Field("published_quantity") @Min(0) val publishedQuantity: Int = 0,
                          @Field("publish_plan") val publishPlan: List<LocalDateTime> = emptyList(),
                          @Field("introduction") val introduction: String? = null,
                          @Field("keyword") val keyword: String? = null,
                          @Field("sex_limit_level") val sexLimitLevel: SexLimitLevel? = null,
                          @Field("violence_limit_level") val violenceLimitLevel: ViolenceLimitLevel? = null,
                          @Field("original_work_type") val originalWorkType: OriginalWorkType? = null,
+                         @Field("tags") val tags: List<Any> = emptyList(),
+                         @Field("staffs") val staffs: Map<StaffTypeInAnimation, List<Int>> = emptyMap(),
                          @Field("relations") val relations: Map<RelationType, List<Int>> = emptyMap())
 
 class AnimationPartialForm
