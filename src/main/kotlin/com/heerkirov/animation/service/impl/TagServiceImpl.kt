@@ -19,6 +19,7 @@ import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import me.liuwj.ktorm.entity.find
 import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -35,7 +36,7 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
         return database.from(Tags).select()
                 .whereWithConditions {
                     if(filter.search != null) {
-                        it += Tags.name like "%${filter.search}%"
+                        it += Tags.name ilike "%${filter.search}%"
                     }
                 }
                 .orderBy(filter.order, orderTranslator)

@@ -6,8 +6,8 @@ import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.util.map
 import com.heerkirov.animation.util.parseJSONObject
-import com.heerkirov.animation.util.toDate
-import com.heerkirov.animation.util.toDateTime
+import com.heerkirov.animation.util.parseDate
+import com.heerkirov.animation.util.parseDateTime
 import java.lang.Exception
 import java.lang.IllegalArgumentException
 import java.time.LocalDate
@@ -82,7 +82,7 @@ private fun <T : Any> mapAny(jsonNode: JsonNode?, kType: KType): Any? {
         kClass == LocalDateTime::class -> {
             if(jsonNode.nodeType != JsonNodeType.STRING) throw ClassCastException("Excepted type is ${JsonNodeType.STRING} but actual type is ${jsonNode.nodeType}.")
             try {
-                jsonNode.asText().toDateTime() as T
+                jsonNode.asText().parseDateTime() as T
             }catch (e: DateTimeParseException) {
                 throw ClassCastException(e.message)
             }
@@ -90,7 +90,7 @@ private fun <T : Any> mapAny(jsonNode: JsonNode?, kType: KType): Any? {
         kClass == LocalDate::class -> {
             if(jsonNode.nodeType != JsonNodeType.STRING) throw ClassCastException("Excepted type is ${JsonNodeType.STRING} but actual type is ${jsonNode.nodeType}.")
             try {
-                jsonNode.asText().toDate() as T
+                jsonNode.asText().parseDate() as T
             }catch (e: DateTimeParseException) {
                 throw ClassCastException(e.message)
             }
@@ -131,14 +131,14 @@ fun mapString(string: String, kType: KType): Any? {
         kClass == Boolean::class -> string.toBoolean()
         kClass == LocalDateTime::class -> {
             try {
-                string.toDateTime()
+                string.parseDateTime()
             }catch (e: DateTimeParseException) {
                 throw ClassCastException(e.message)
             }
         }
         kClass == LocalDate::class -> {
             try {
-                string.toDate()
+                string.parseDate()
             }catch (e: DateTimeParseException) {
                 throw ClassCastException(e.message)
             }

@@ -49,9 +49,28 @@ class JacksonConverter<T: Any>(private val typeReference: TypeReference<T>) : Js
     }
 }
 
+
+class NullableDateTimeListConverter : JsonConverter<List<LocalDateTime?>> {
+    override fun getter(json: String): List<LocalDateTime?> {
+        return json.parseJsonNode().map {
+            if(it == null || it.isNull) {
+                null
+            }else{
+                it.asText().parseDateTime()
+            }
+        }
+    }
+
+    override fun setter(obj: List<LocalDateTime?>): String {
+        return obj.map { it?.toDateTimeString() }.toJSONString()
+    }
+}
+
 class DateTimeListConverter : JsonConverter<List<LocalDateTime>> {
     override fun getter(json: String): List<LocalDateTime> {
-        return json.parseJsonNode().map { it.asText().toDateTime() }
+        return json.parseJsonNode().map {
+            it.asText().parseDateTime()
+        }
     }
 
     override fun setter(obj: List<LocalDateTime>): String {

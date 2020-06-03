@@ -28,9 +28,9 @@ CREATE TABLE animation(
     -- 放送信息
     publish_type SMALLINT,                          -- 放送类型
     publish_time DATE,                              -- 放送时间，以月为最小单位
-    duration INTEGER,                               -- 平均单话时长
-    sum_quantity INTEGER NOT NULL DEFAULT 1,        -- 总集数
-    published_quantity INTEGER NOT NULL DEFAULT 0,  -- 已发布的集数
+    episode_duration INTEGER,                       -- 平均单话时长
+    total_episodes INTEGER NOT NULL DEFAULT 1,      -- 总集数
+    published_episodes INTEGER NOT NULL DEFAULT 0,  -- 已发布的集数
     published_record JSONB NOT NULL,                -- 已发布的集数时间点
     publish_plan JSONB NOT NULL,                    -- 后续的发布计划时间点
     -- 描述信息
@@ -97,6 +97,7 @@ CREATE TABLE comment(
     animation_id INTEGER NOT NULL,
 
     score INTEGER,                                  -- 评分[1, 10]
+    title TEXT,                                     -- 评论标题
     article TEXT,                                   -- 评论内容
 
     create_time TIMESTAMP NOT NULL,                 -- 首次评论时间
@@ -111,18 +112,19 @@ CREATE TABLE record(
     animation_id INTEGER NOT NULL,
     -- 观看状态与记录
     status SMALLINT NOT NULL,                       -- 观看状态(未开始/正在观看/已看完)
-    watched_record JSONB NOT NULL DEFAULT '{}',     -- 独立的观看记录，记录每一话的观看时间
-    watched_time INTEGER NOT NULL,                  -- 观感的进度数
+    in_diary BOOLEAN NOT NULL DEFAULT FALSE,        -- 在日记本中
     watched_quantity INTEGER NOT NULL,              -- 已观看集数(严谨表述：指独立的、有观看记录的集数)
-    first_progress_id INTEGER,                      -- 首次进度的id
-    latest_progress_id INTEGER,                     -- 最新一次进度的id
+    watched_record JSONB NOT NULL DEFAULT '[]',     -- 独立的观看记录，记录每一话的观看时间
+    progress_count INTEGER NOT NULL,                -- 观看的进度数
+    latest_progress_id BIGINT,                      -- 最新一次进度的id
 
-    watch_original BOOLEAN NOT NULL DEFAULT FALSE,  -- 看过原作
+    seen_original BOOLEAN NOT NULL DEFAULT FALSE,  -- 看过原作
 
     -- 关键时间点
     subscription_time TIMESTAMP,                    -- 订阅时间
     finish_time TIMESTAMP DEFAULT NULL,             -- 首次看完时间
-    last_watch_time TIMESTAMP DEFAULT NULL,         -- 上次更新观看记录的时间
+    last_active_time TIMESTAMP DEFAULT NULL,        -- 上次活跃的时间
+    last_active_event JSONB NOT NULL DEFAULT '{}',  -- 上次活跃的事件内容
 
     create_time TIMESTAMP NOT NULL,                 -- 条目创建时间
     update_time TIMESTAMP NOT NULL                  -- 上次更新时间

@@ -10,8 +10,8 @@ data class AnimationRes(val id: Int,
                         val title: String,
                         val cover: String?,
                         @JsonProperty("publish_time") val publishTime: String?,
-                        @JsonProperty("sum_quantity") val sumQuantity: Int?,
-                        @JsonProperty("published_quantity") val publishedQuantity: Int?,
+                        @JsonProperty("total_episodes") val totalEpisodes: Int?,
+                        @JsonProperty("published_episodes") val publishedEpisodes: Int?,
                         @JsonProperty("create_time") val createTime: String,
                         @JsonProperty("update_time") val updateTime: String)
 
@@ -23,9 +23,9 @@ data class AnimationDetailRes(val id: Int,
 
                               @JsonProperty("publish_type") val publishType: PublishType?,
                               @JsonProperty("publish_time") val publishTime: String?,
-                              val duration: Int?,
-                              @JsonProperty("sum_quantity") val sumQuantity: Int?,
-                              @JsonProperty("published_quantity") val publishedQuantity: Int?,
+                              @JsonProperty("episode_duration") val episodeDuration: Int?,
+                              @JsonProperty("total_episodes") val totalEpisodes: Int?,
+                              @JsonProperty("published_episodes") val publishedEpisodes: Int?,
                               @JsonProperty("publish_plan") val publishPlan: List<String>,
 
                               val introduction: String?,
@@ -50,7 +50,7 @@ data class AnimationRelationRes(val id: Int,
 data class AnimationResult(val animation: Animation, val tags: List<TagRes>, val staffs: List<StaffRelationRes>, val relations: List<AnimationRelationRes>)
 
 fun Animation.toRes(): AnimationRes {
-    return AnimationRes(id, title, cover, publishTime?.toDateMonthString(), sumQuantity, publishedQuantity, createTime.toDateTimeString(), updateTime.toDateTimeString())
+    return AnimationRes(id, title, cover, publishTime?.toDateMonthString(), totalEpisodes, publishedEpisodes, createTime.toDateTimeString(), updateTime.toDateTimeString())
 }
 
 fun AnimationResult.toDetailRes(): AnimationDetailRes {
@@ -62,8 +62,8 @@ fun AnimationResult.toDetailRes(): AnimationDetailRes {
             animation.cover,
             animation.publishType,
             animation.publishTime?.toDateMonthString(),
-            animation.duration, animation.sumQuantity,
-            animation.publishedQuantity,
+            animation.episodeDuration, animation.totalEpisodes,
+            animation.publishedEpisodes,
             animation.publishPlan.map { it.toDateTimeString() },
             animation.introduction,
             animation.keyword,

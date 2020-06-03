@@ -20,6 +20,7 @@ import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import me.liuwj.ktorm.entity.find
 import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -41,7 +42,7 @@ class AnimationServiceImpl(@Autowired private val database: Database,
 
     private val animationFields = arrayOf(
             Animations.id, Animations.title, Animations.originTitle, Animations.otherTitle, Animations.cover,
-            Animations.publishType, Animations.publishTime, Animations.duration, Animations.sumQuantity, Animations.publishedQuantity, Animations.publishedRecord, Animations.publishPlan,
+            Animations.publishType, Animations.publishTime, Animations.episodeDuration, Animations.totalEpisodes, Animations.publishedEpisodes, Animations.publishedRecord, Animations.publishPlan,
             Animations.introduction, Animations.keyword, Animations.sexLimitLevel, Animations.violenceLimitLevel, Animations.originalWorkType,
             Animations.relations, Animations.relationsTopology, Animations.createTime, Animations.updateTime, Animations.creator, Animations.updater
     )
@@ -83,14 +84,14 @@ class AnimationServiceImpl(@Autowired private val database: Database,
                     if(filter.search != null) {
                         val s = "%${filter.search}%"
                         //search参数在title, originTitle, otherTitle, keyword中搜索
-                        it += (Animations.title like s) or (Animations.originTitle like s) or (Animations.otherTitle like s) or (Animations.keyword like s)
+                        it += (Animations.title ilike s) or (Animations.originTitle ilike s) or (Animations.otherTitle ilike s) or (Animations.keyword ilike s)
                     }
                     if(filter.originalWorkType != null) { it += Animations.originalWorkType eq filter.originalWorkType }
                     if(filter.publishType != null) { it += Animations.publishType eq filter.publishType }
                     if(filter.sexLimitLevel != null) { it += Animations.sexLimitLevel eq filter.sexLimitLevel }
                     if(filter.violenceLimitLevel != null) { it += Animations.violenceLimitLevel eq filter.violenceLimitLevel }
                     if(filter.publishTime != null) {
-                        val (year, month) = filter.publishTime.toYearAndMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' cast error: Param must be 'yyyy' or 'yyyy-MM'.")
+                        val (year, month) = filter.publishTime.parseYearAndMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' cast error: Param must be 'yyyy' or 'yyyy-MM'.")
                         if(year <= 0) throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time': year must be greater than 0.")
                         it += if(month != null) {
                             if(month < 1 || month > 12) throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time': month must between 1 and 12.")
@@ -152,35 +153,35 @@ class AnimationServiceImpl(@Autowired private val database: Database,
     }
 
     @Transactional
-    override fun create(animationForm: AnimationForm, creator: User): Int {
+    override fun create(form: AnimationForm, creator: User): Int {
         val now = DateTimeUtil.now()
 
-        val (publishedQuantity, publishPlan, publishedRecord) = animationProcessor.processQuantityAndPlan(
-                animationForm.sumQuantity,
-                animationForm.publishedQuantity,
-                animationForm.publishPlan,
+        val (publishedEpisodes, publishPlan, publishedRecord) = animationProcessor.processQuantityAndPlan(
+                form.totalEpisodes,
+                form.publishedEpisodes,
+                form.publishPlan,
                 emptyList(), now)
 
-        val publishTime = if(animationForm.publishTime == null) { null }else{
-            animationForm.publishTime.toDateMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' must be 'yyyy-MM'.")
+        val publishTime = if(form.publishTime == null) { null }else{
+            form.publishTime.parseDateMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' must be 'yyyy-MM'.")
         }
 
         val id = database.insertAndGenerateKey(Animations) {
-            it.title to animationForm.title
-            it.originTitle to animationForm.originTitle
-            it.otherTitle to animationForm.otherTitle
-            it.publishType to animationForm.publishType
+            it.title to form.title
+            it.originTitle to form.originTitle
+            it.otherTitle to form.otherTitle
+            it.publishType to form.publishType
             it.publishTime to publishTime
-            it.duration to animationForm.duration
-            it.sumQuantity to animationForm.sumQuantity
-            it.publishedQuantity to publishedQuantity
+            it.episodeDuration to form.episodeDuration
+            it.totalEpisodes to form.totalEpisodes
+            it.publishedEpisodes to publishedEpisodes
             it.publishedRecord to publishedRecord
             it.publishPlan to publishPlan
-            it.introduction to animationForm.introduction
-            it.keyword to animationForm.keyword
-            it.sexLimitLevel to animationForm.sexLimitLevel
-            it.violenceLimitLevel to animationForm.violenceLimitLevel
-            it.originalWorkType to animationForm.originalWorkType
+            it.introduction to form.introduction
+            it.keyword to form.keyword
+            it.sexLimitLevel to form.sexLimitLevel
+            it.violenceLimitLevel to form.violenceLimitLevel
+            it.originalWorkType to form.originalWorkType
             it.relations to emptyMap()
             it.relationsTopology to emptyMap()
             it.createTime to now
@@ -189,25 +190,83 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             it.updater to creator.id
         } as Int
 
-        if(animationForm.tags.isNotEmpty()) {
-            tagProcessor.updateTags(id, animationForm.tags, creator, creating = true)
+        if(form.tags.isNotEmpty()) {
+            tagProcessor.updateTags(id, form.tags, creator, creating = true)
         }
-        if(animationForm.staffs.isNotEmpty()) {
-            staffProcessor.updateStaffs(id, animationForm.staffs, creating = true)
+        if(form.staffs.isNotEmpty()) {
+            staffProcessor.updateStaffs(id, form.staffs, creating = true)
         }
-        if(animationForm.relations.isNotEmpty()) {
-            relationProcessor.updateRelationTopology(id, animationForm.relations)
+        if(form.relations.isNotEmpty()) {
+            relationProcessor.updateRelationTopology(id, form.relations)
         }
 
         return id
     }
 
     @Transactional
-    override fun partialUpdate(id: Int, animationPartialForm: AnimationPartialForm, updater: User) {
-        TODO("Not yet implemented")
+    override fun partialUpdate(id: Int, form: AnimationPartialForm, updater: User) {
+        val now = DateTimeUtil.now()
+
+        val row = database.update(Animations) {
+            where { it.id eq id }
+            it.updateTime to now
+            it.updater to updater.id
+            if(form.title != null) it.title to form.title
+            if(form.originTitle != null) it.originTitle to form.originTitle
+            if(form.otherTitle != null) it.otherTitle to form.otherTitle
+            if(form.introduction != null) it.introduction to form.introduction
+            if(form.keyword != null) it.keyword to form.keyword
+            if(form.sexLimitLevel != null) it.sexLimitLevel to form.sexLimitLevel
+            if(form.violenceLimitLevel != null) it.violenceLimitLevel to form.violenceLimitLevel
+            if(form.originalWorkType != null) it.originalWorkType to form.originalWorkType
+            if(form.publishType != null) it.publishType to form.publishType
+            if(form.episodeDuration != null) it.episodeDuration to form.episodeDuration
+
+            if(form.publishTime != null) {
+                it.publishTime to (form.publishTime.parseDateMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' must be 'yyyy-MM'."))
+            }
+
+            if(form.totalEpisodes != null || form.publishedEpisodes != null || form.publishPlan != null) {
+                val rowSet = database.from(Animations)
+                        .select(Animations.totalEpisodes, Animations.publishedEpisodes, Animations.publishPlan, Animations.publishedRecord)
+                        .where { Animations.id eq id }
+                        .firstOrNull() ?: throw NotFoundException("Animation not found.")
+                val oldTotalEpisodes = rowSet[Animations.totalEpisodes]!!
+                val oldPublishedEpisodes = rowSet[Animations.publishedEpisodes]!!
+                val oldPublishPlan = rowSet[Animations.publishPlan]!!
+                val oldPublishedRecord = rowSet[Animations.publishedRecord]!!
+                val totalEpisodes = form.totalEpisodes ?: oldTotalEpisodes
+                val (publishedEpisodes, publishPlan, publishedRecord) = animationProcessor.processQuantityAndPlan(
+                        totalEpisodes,
+                        form.publishedEpisodes ?: oldPublishedEpisodes,
+                        form.publishPlan ?: oldPublishPlan,
+                        oldPublishedRecord, now)
+                it.totalEpisodes to totalEpisodes
+                it.publishedEpisodes to publishedEpisodes
+                it.publishPlan to publishPlan
+                it.publishedRecord to publishedRecord
+            }
+        }
+        if(row == 0) throw NotFoundException("Animation not found.")
+
+        if(form.tags?.isNotEmpty() == true) {
+            tagProcessor.updateTags(id, form.tags, updater)
+        }
+        if(form.staffs?.isNotEmpty() == true) {
+            staffProcessor.updateStaffs(id, form.staffs)
+        }
+        if(form.relations?.isNotEmpty() == true) {
+            relationProcessor.updateRelationTopology(id, form.relations)
+        }
+
+        //TODO records相关业务完成后，需要联动更新records
     }
 
     override fun delete(id: Int) {
-        TODO("Not yet implemented")
+        if(database.delete(Animations) { it.id eq id } == 0) throw NotFoundException("Animation not found.")
+        database.delete(AnimationTagRelations) { it.animationId eq id }
+        database.delete(AnimationStaffRelations) { it.animationId eq id }
+        //TODO records相关业务完成后，需要联动删除records
+        //TODO comment相关业务完成后，需要联动删除comments
     }
 }

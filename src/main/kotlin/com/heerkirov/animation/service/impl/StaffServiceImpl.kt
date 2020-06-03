@@ -19,6 +19,7 @@ import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import me.liuwj.ktorm.entity.find
 import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -35,7 +36,7 @@ class StaffServiceImpl(@Autowired private val database: Database) : StaffService
                 .whereWithConditions {
                     if(filter.search != null) {
                         val s = "%${filter.search}%"
-                        it += (Staffs.name like s) or (Staffs.originName like s) or (Staffs.remark like s)
+                        it += (Staffs.name ilike s) or (Staffs.originName ilike s) or (Staffs.remark ilike s)
                     }
                     if(filter.isOrganization != null) {
                         it += Staffs.isOrganization eq filter.isOrganization

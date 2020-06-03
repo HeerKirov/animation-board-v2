@@ -5,10 +5,8 @@ import com.heerkirov.animation.enums.PublishType
 import com.heerkirov.animation.enums.SexLimitLevel
 import com.heerkirov.animation.enums.ViolenceLimitLevel
 import com.heerkirov.animation.model.data.Animation
-import com.heerkirov.animation.util.ktorm.DateTimeListConverter
-import com.heerkirov.animation.util.ktorm.RelationConverter
+import com.heerkirov.animation.util.ktorm.*
 import com.heerkirov.animation.util.ktorm.enum
-import com.heerkirov.animation.util.ktorm.json
 import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 
@@ -21,10 +19,10 @@ object Animations : BaseTable<Animation>("animation") {
 
     val publishType by enum("publish_type", typeRef<PublishType>())
     val publishTime by date("publish_time")
-    val duration by int("duration")
-    val sumQuantity by int("sum_quantity")
-    val publishedQuantity by int("published_quantity")
-    val publishedRecord by json("published_record", DateTimeListConverter())
+    val episodeDuration by int("episode_duration")
+    val totalEpisodes by int("total_episodes")
+    val publishedEpisodes by int("published_episodes")
+    val publishedRecord by json("published_record", NullableDateTimeListConverter())
     val publishPlan by json("publish_plan", DateTimeListConverter())
 
     val introduction by text("introduction")
@@ -49,9 +47,9 @@ object Animations : BaseTable<Animation>("animation") {
             cover = row[cover],
             publishType = row[publishType],
             publishTime = row[publishTime],
-            duration = row[duration],
-            sumQuantity = row[sumQuantity]!!,
-            publishedQuantity = row[publishedQuantity]!!,
+            episodeDuration = row[episodeDuration],
+            totalEpisodes = row[totalEpisodes]!!,
+            publishedEpisodes = row[publishedEpisodes]!!,
             publishedRecord = row[publishedRecord]!!,
             publishPlan = row[publishPlan]!!,
             introduction = row[introduction],

@@ -13,9 +13,9 @@ interface AnimationService {
 
     fun get(id: Int): AnimationResult
 
-    fun create(animationForm: AnimationForm, creator: User): Int
+    fun create(form: AnimationForm, creator: User): Int
 
-    fun partialUpdate(id: Int, animationPartialForm: AnimationPartialForm, updater: User)
+    fun partialUpdate(id: Int, form: AnimationPartialForm, updater: User)
 
     fun delete(id: Int)
 }
