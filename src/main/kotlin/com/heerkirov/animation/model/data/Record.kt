@@ -24,6 +24,6 @@ data class Record(val id: Long,
                   val createTime: LocalDateTime,
                   val updateTime: LocalDateTime)
 
-data class WatchedRecord(val episode: Int, val watchedTime: LocalDateTime)
+data class WatchedRecord(val episode: Int, val watchedTime: String)
 
 data class ActiveEvent(val type: ActiveEventType, val episode: List<Int>? = null)

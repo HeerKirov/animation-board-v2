@@ -1,4 +1,4 @@
-package com.heerkirov.animation.service.impl
+package com.heerkirov.animation.service.manager
 
 import com.heerkirov.animation.dao.Animations
 import com.heerkirov.animation.dao.RecordProgresses
@@ -7,105 +7,21 @@ import com.heerkirov.animation.enums.ActiveEventType
 import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.enums.RecordStatus
 import com.heerkirov.animation.exception.BadRequestException
-import com.heerkirov.animation.exception.NotFoundException
 import com.heerkirov.animation.model.data.ActiveEvent
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.data.WatchedRecord
-import com.heerkirov.animation.model.form.ProgressForm
 import com.heerkirov.animation.model.form.RecordCreateForm
-import com.heerkirov.animation.model.form.RecordPartialForm
-import com.heerkirov.animation.model.result.ProgressRes
-import com.heerkirov.animation.model.result.RecordDetailRes
-import com.heerkirov.animation.service.RecordService
 import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.arrayListFor
-import com.heerkirov.animation.util.toDateTimeString
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.find
-import me.liuwj.ktorm.entity.sequenceOf
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
+import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
-@Service
-class RecordServiceImpl(@Autowired private val database: Database) : RecordService {
-    private val recordFields = arrayOf(
-            Animations.title, Records.seenOriginal, Records.status, Records.inDiary, Records.watchedRecord,
-            Animations.totalEpisodes, Animations.publishedEpisodes, Records.watchedEpisodes, Records.progressCount,
-            Records.subscriptionTime, Records.finishTime, Records.createTime, Records.updateTime
-    )
-
-    override fun get(animationId: Int, user: User): RecordDetailRes {
-        val rowSet = database.from(Records)
-                .innerJoin(Animations, Records.animationId eq Animations.id)
-                .select(*recordFields)
-                .where { (Records.animationId eq animationId) and (Records.ownerId eq user.id) }
-                .firstOrNull()
-                ?: throw NotFoundException("Record not found.")
-
-        val totalEpisodes = rowSet[Animations.totalEpisodes]!!
-        val publishedEpisodes = rowSet[Animations.publishedEpisodes]!!
-        val watchedEpisodes = rowSet[Records.watchedEpisodes]!!
-        val watchedRecord = rowSet[Records.watchedRecord]!!
-        val progressCount = rowSet[Records.progressCount]!!
-        val episodesCount = calculateEpisodesCount(watchedRecord, progressCount, watchedEpisodes, publishedEpisodes)
-
-        return RecordDetailRes(
-                animationId = animationId,
-                title = rowSet[Animations.title]!!,
-                seenOriginal = rowSet[Records.seenOriginal]!!,
-                status = rowSet[Records.status]!!,
-                inDiary = rowSet[Records.inDiary]!!,
-                totalEpisodes = totalEpisodes,
-                publishedEpisodes = publishedEpisodes,
-                watchedEpisodes = watchedEpisodes,
-                progressCount = progressCount,
-                episodesCount = episodesCount,
-                subscriptionTime = rowSet[Records.subscriptionTime]?.toDateTimeString(),
-                finishTime = rowSet[Records.finishTime]?.toDateTimeString(),
-                createTime = rowSet[Records.createTime]!!.toDateTimeString(),
-                updateTime = rowSet[Records.updateTime]!!.toDateTimeString()
-        )
-    }
-
-    @Transactional
-    override fun create(form: RecordCreateForm, user: User) {
-        database.sequenceOf(Records).find { (Records.animationId eq form.animationId) and (Records.ownerId eq user.id) }?.run {
-            throw BadRequestException(ErrCode.ALREADY_EXISTS, "Record of animation ${form.animationId} is already exists.")
-        }
-        if(database.sequenceOf(Animations).find { Animations.id eq form.animationId } == null) {
-            throw BadRequestException(ErrCode.NOT_EXISTS, "Animation ${form.animationId} is not exists.")
-        }
-
-        //创建进度模型并回存到记录表
-        when (form.createType) {
-            RecordCreateForm.CreateType.SUBSCRIBE -> createSubscribe(form, user)
-            RecordCreateForm.CreateType.SUPPLEMENT -> createSupplement(form, user)
-            RecordCreateForm.CreateType.RECORD -> createRecord(form, user)
-        }
-    }
-
-    @Transactional
-    override fun partialUpdate(animationId: Int, form: RecordPartialForm, user: User) {
-        TODO("Not yet implemented")
-    }
-
-    @Transactional
-    override fun delete(animationId: Int, user: User) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getProgressList(animationId: Int, user: User): List<ProgressRes> {
-        TODO("Not yet implemented")
-    }
-
-    @Transactional
-    override fun createProgress(animationId: Int, form: ProgressForm, user: User): ProgressRes {
-        TODO("Not yet implemented")
-    }
-
-    private fun createSubscribe(form: RecordCreateForm, user: User) {
+@Component
+class RecordProcessor(@Autowired private val database: Database) {
+    fun createSubscribe(form: RecordCreateForm, user: User) {
         val now = DateTimeUtil.now()
         //订阅模式创建。创建默认的第一条观看进度
         val id = database.insertAndGenerateKey(Records) {
@@ -142,7 +58,7 @@ class RecordServiceImpl(@Autowired private val database: Database) : RecordServi
         }
     }
 
-    private fun createSupplement(form: RecordCreateForm, user: User) {
+    fun createSupplement(form: RecordCreateForm, user: User) {
         if(form.progress == null) {
             throw BadRequestException(ErrCode.PARAM_REQUIRED, "Param 'progress' is required.")
         }
@@ -272,7 +188,7 @@ class RecordServiceImpl(@Autowired private val database: Database) : RecordServi
         }
     }
 
-    private fun createRecord(form: RecordCreateForm, user: User) {
+    fun createRecord(form: RecordCreateForm, user: User) {
         val now = DateTimeUtil.now()
         //记录模式创建。以无进度模式创建，所有记录都为0
         database.insert(Records) {
@@ -296,7 +212,13 @@ class RecordServiceImpl(@Autowired private val database: Database) : RecordServi
         }
     }
 
-    private fun calculateEpisodesCount(watchedRecord: List<WatchedRecord>, progressCount: Int, watchedEpisodes: Int, publishedEpisodes: Int): List<Int> {
+    /**
+     * 计算每一话的观看总次数。
+     * 计算范围是1～watchedEpisodes话。如果是多次观看则是1～publishedEpisodes。
+     * 计算方案很简单，旧进度每个+1，最新一次进度根据watchedEpisodes算前面的+1后面的不加。零散观看记录分别计数。
+     */
+    fun calculateEpisodesCount(watchedRecord: List<WatchedRecord>, progressCount: Int, watchedEpisodes: Int, publishedEpisodes: Int): List<Int> {
+        //TODO 将离散数据表改为独立的API，并且提供时间点查询API
         val size = if (progressCount > 1) publishedEpisodes else watchedEpisodes
         val episodes = arrayListFor(size) { if(progressCount == 0 || it < watchedEpisodes) { progressCount }else{ progressCount - 1 } }
         for ((episode, _) in watchedRecord) {
@@ -305,5 +227,23 @@ class RecordServiceImpl(@Autowired private val database: Database) : RecordServi
             }
         }
         return episodes
+    }
+
+    /**
+     * 计算要写入到数据库的、更新后的progress观看记录表。
+     * 首先将旧record补充null，补充到old watched的数量。然后根据new watched，补now。
+     * 多余的部分则会被截去。
+     */
+    fun calculateProgressWatchedRecord(watchedRecord: List<LocalDateTime?>, oldWatchedRecord: Int, newWatchedRecord: Int, now: LocalDateTime): List<LocalDateTime?> {
+        val temp = when {
+            oldWatchedRecord == watchedRecord.size -> watchedRecord
+            oldWatchedRecord > watchedRecord.size -> watchedRecord + arrayListFor(oldWatchedRecord - watchedRecord.size) { null }
+            else -> watchedRecord.subList(0, oldWatchedRecord)
+        }
+        return when {
+            newWatchedRecord == temp.size -> temp
+            newWatchedRecord > temp.size -> temp + arrayListFor(newWatchedRecord - temp.size) { now }
+            else -> temp.subList(0, newWatchedRecord)
+        }
     }
 }

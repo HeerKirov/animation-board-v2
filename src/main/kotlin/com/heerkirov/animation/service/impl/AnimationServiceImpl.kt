@@ -266,7 +266,14 @@ class AnimationServiceImpl(@Autowired private val database: Database,
         if(database.delete(Animations) { it.id eq id } == 0) throw NotFoundException("Animation not found.")
         database.delete(AnimationTagRelations) { it.animationId eq id }
         database.delete(AnimationStaffRelations) { it.animationId eq id }
-        //TODO records相关业务完成后，需要联动删除records
+        deleteRecords(id)
         //TODO comment相关业务完成后，需要联动删除comments
+        //TODO 需要联动更新与其关联的动画的relation
+    }
+
+    private fun deleteRecords(animationId: Int) {
+        val ids = database.from(Records).select(Records.id).where { Records.animationId eq animationId }.map { it[Records.id]!! }
+        database.delete(Records) { it.animationId eq animationId }
+        database.delete(RecordProgresses) { it.recordId inList ids }
     }
 }

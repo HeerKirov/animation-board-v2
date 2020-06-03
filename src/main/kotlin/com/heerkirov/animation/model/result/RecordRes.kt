@@ -18,6 +18,11 @@ data class RecordDetailRes(@JsonProperty("animation_id") val animationId: Int,
                            @JsonProperty("create_time") val createTime: String,
                            @JsonProperty("update_time") val updateTime: String)
 
-data class ProgressRes(@JsonProperty("subscription_time") val subscriptionTime: String?,
-                       @JsonProperty("finish_time") val finishTime: String?,
-                       @JsonProperty("watched_episodes") val watchedEpisodes: Int)
+data class ProgressRes(@JsonProperty("ordinal") val ordinal: Int,
+                       @JsonProperty("start_time") val startTime: String?,
+                       @JsonProperty("finish_time") val finishTime: String?)
+
+data class NextRes(@JsonProperty("watched_episodes") val watchedEpisodes: Int)
+
+data class EpisodesCount(@JsonProperty("progress_num") val progressNum: Int,
+                         @JsonProperty("scatter_num") val scatterNum: Int)

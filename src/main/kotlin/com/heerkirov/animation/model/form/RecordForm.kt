@@ -15,7 +15,16 @@ data class RecordCreateForm(@Field("animation_id") val animationId: Int,
     }
 }
 
-class RecordPartialForm()
+data class RecordPartialForm(@Field("seen_original") val seenOriginal: Boolean? = null,
+                        @Field("in_diary") val inDiary: Boolean? = null,
+                        @Field("watched_episodes") @Min(0) val watchedEpisodes: Int? = null)
+
+data class ScatterForm(@Field("episode") @Min(1) val episode: Int)
+
+data class ProgressCreateForm(@Field("supplement") val supplement: Boolean = false,
+                              @Field("start_time") val startTime: LocalDateTime? = null,
+                              @Field("finish_time") val finishTime: LocalDateTime? = null,
+                              @Field("watched_episodes") @Min(0) val watchedEpisodes: Int? = null)
 
 data class ProgressForm(@Field("start_time") val startTime: LocalDateTime? = null,
                         @Field("finish_time") val finishTime: LocalDateTime? = null,
