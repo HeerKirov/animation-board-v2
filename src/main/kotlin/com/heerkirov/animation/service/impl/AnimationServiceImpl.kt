@@ -1,6 +1,5 @@
 package com.heerkirov.animation.service.impl
 
-import com.heerkirov.animation.service.manager.RelationProcessor
 import com.heerkirov.animation.dao.*
 import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.exception.BadRequestException
@@ -12,9 +11,7 @@ import com.heerkirov.animation.model.data.Animation
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.result.*
 import com.heerkirov.animation.service.AnimationService
-import com.heerkirov.animation.service.manager.AnimationProcessor
-import com.heerkirov.animation.service.manager.StaffProcessor
-import com.heerkirov.animation.service.manager.TagProcessor
+import com.heerkirov.animation.service.manager.*
 import com.heerkirov.animation.util.*
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
@@ -29,9 +26,10 @@ import java.time.LocalDate
 @Service
 class AnimationServiceImpl(@Autowired private val database: Database,
                            @Autowired private val animationProcessor: AnimationProcessor,
-                           @Autowired private val relationProcessor: RelationProcessor,
-                           @Autowired private val tagProcessor: TagProcessor,
-                           @Autowired private val staffProcessor: StaffProcessor) : AnimationService {
+                           @Autowired private val relationProcessor: AnimationRelationProcessor,
+                           @Autowired private val tagProcessor: AnimationTagProcessor,
+                           @Autowired private val staffProcessor: AnimationStaffProcessor,
+                           @Autowired private val recordProcessor: AnimationRecordProcessor) : AnimationService {
     private val orderTranslator = OrderTranslator {
         "publish_time" to Animations.publishTime nulls last
         "create_time" to Animations.createTime
@@ -236,14 +234,16 @@ class AnimationServiceImpl(@Autowired private val database: Database,
                 val oldPublishedRecord = rowSet[Animations.publishedRecord]!!
                 val totalEpisodes = form.totalEpisodes ?: oldTotalEpisodes
                 val (publishedEpisodes, publishPlan, publishedRecord) = animationProcessor.processQuantityAndPlan(
-                        totalEpisodes,
-                        form.publishedEpisodes ?: oldPublishedEpisodes,
-                        form.publishPlan ?: oldPublishPlan,
-                        oldPublishedRecord, now)
+                        totalEpisodes, form.publishedEpisodes ?: oldPublishedEpisodes,
+                        form.publishPlan ?: oldPublishPlan, oldPublishedRecord, now)
                 it.totalEpisodes to totalEpisodes
                 it.publishedEpisodes to publishedEpisodes
                 it.publishPlan to publishPlan
                 it.publishedRecord to publishedRecord
+
+                if(totalEpisodes != oldTotalEpisodes || publishedEpisodes != oldPublishedEpisodes) {
+                    recordProcessor.updateRecord(id, totalEpisodes, publishedEpisodes, oldTotalEpisodes, oldPublishedEpisodes)
+                }
             }
         }
         if(row == 0) throw NotFoundException("Animation not found.")
@@ -255,24 +255,23 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             staffProcessor.updateStaffs(id, form.staffs)
         }
         if(form.relations?.isNotEmpty() == true) {
-            relationProcessor.updateRelationTopology(id, form.relations)
+            try {
+                relationProcessor.updateRelationTopology(id, form.relations)
+            }catch (e: NoSuchElementException) {
+                throw BadRequestException(ErrCode.NOT_EXISTS, e.message)
+            }
         }
-
-        //TODO records相关业务完成后，需要联动更新records
     }
 
     override fun delete(id: Int) {
-        if(database.delete(Animations) { it.id eq id } == 0) throw NotFoundException("Animation not found.")
+        val animation = database.sequenceOf(Animations).find { it.id eq id } ?: throw NotFoundException("Animation not found.")
+
+        recordProcessor.deleteRecords(id)
+        //TODO comment相关业务完成后，需要联动删除comments
+        if(animation.relationsTopology.isNotEmpty()) relationProcessor.removeAnimationInTopology(id, animation.relationsTopology)
         database.delete(AnimationTagRelations) { it.animationId eq id }
         database.delete(AnimationStaffRelations) { it.animationId eq id }
-        deleteRecords(id)
-        //TODO comment相关业务完成后，需要联动删除comments
-        //TODO 需要联动更新与其关联的动画的relation
-    }
+        database.delete(Animations) { it.id eq id }
 
-    private fun deleteRecords(animationId: Int) {
-        val ids = database.from(Records).select(Records.id).where { Records.animationId eq animationId }.map { it[Records.id]!! }
-        database.delete(Records) { it.animationId eq animationId }
-        database.delete(RecordProgresses) { it.recordId inList ids }
     }
 }

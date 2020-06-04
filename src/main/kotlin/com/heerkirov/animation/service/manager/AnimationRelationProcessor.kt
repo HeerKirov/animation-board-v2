@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 @Component
-class RelationProcessor(@Autowired private val database: Database) {
+class AnimationRelationProcessor(@Autowired private val database: Database) {
     /**
      * 对单个animation的relation进行更新。
      * 首先根据旧的全量拓扑，找出所有关联对象。然后加入新的拓扑关联对象，构成全量图。
@@ -82,6 +82,52 @@ class RelationProcessor(@Autowired private val database: Database) {
             it.relations to newRelations
             it.relationsTopology to newThisTopology
             where { it.id eq thisAnimation.id }
+        }
+    }
+
+    /**
+     * 从一个animation的全部关联中移除此animation。
+     * 首先根据全量拓扑，找出所有关联对象。将除原对象外的所有关联对象放入图。
+     * 遍历这些对象的所有直接关联关系，从之中移除全部原对象，然后将剩余关系放入图。
+     * 随后推导全量图，将新的全量拓扑和变化的关联对象更新到其对应的对象。
+     */
+    fun removeAnimationInTopology(animationId: Int, topology: Map<RelationType, List<Int>>) {
+        //节点列表
+        val elements = hashMapOf<Int, AnimationModel>()
+        //查找全量拓扑的关联节点，放入图中
+        elements.putAll(findAll(topology.flatMap { (_, v) -> v }).map { Pair(it.id, it) })
+        //relation发生变动的节点
+        val relationChanges = hashMapOf<Int, Map<RelationType, List<Int>>>()
+        //构建图
+        val graph = RelationGraph<AnimationModel, RelationType>(elements.values.sortedBy { it.createTime }.toTypedArray()) {
+            for (animation in elements.values) {
+                val newRelations = findAndRemoveIdInRelation(animation.relations, animationId)
+                for((r, list) in (newRelations ?: animation.relations).entries) {
+                    for(i in list) {
+                        addRelation(animation, r, elements[i]!!)
+                    }
+                }
+                if(newRelations != null) {
+                    relationChanges[animation.id] = newRelations
+                }
+            }
+        }
+
+        //从传播图导出每一个节点的全量拓扑
+        //比对每个节点的全量拓扑，发生变化的放入保存列表。relation发生变动的，也要放入保存列表
+        //批量保存
+        database.batchUpdate(Animations) {
+            for(element in elements.values) {
+                val newRelations = relationChanges[element.id]
+                val newTopology = graph[element].map { (k, v) -> Pair(k, v.map { it.id }) }.toMap()
+                if(newRelations != null || !compareRelationEquals(element.relationsTopology, newTopology)) {
+                    item {
+                        where { it.id eq element.id }
+                        it.relations to (newRelations ?: element.relations)
+                        it.relationsTopology to newTopology
+                    }
+                }
+            }
         }
     }
 
@@ -174,5 +220,19 @@ class RelationProcessor(@Autowired private val database: Database) {
             }
         }
         return true
+    }
+
+    /**
+     * 在关系中查找并移除指定的id。如果至少有一个id被移除，那么返回变更后的关系。
+     */
+    private fun findAndRemoveIdInRelation(relations: Map<RelationType, List<Int>>, id: Int): Map<RelationType, List<Int>>? {
+        val map = HashMap<RelationType, List<Int>>()
+        var any = false
+        for ((r, list) in relations.entries) {
+            val newList = list.filter { it != id }
+            if(newList.isNotEmpty()) map[r] = newList
+            if(newList.size < list.size) any = true
+        }
+        return if(any) map else null
     }
 }

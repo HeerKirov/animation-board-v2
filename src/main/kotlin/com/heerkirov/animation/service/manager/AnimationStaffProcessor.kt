@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class StaffProcessor(@Autowired private val database: Database) {
+class AnimationStaffProcessor(@Autowired private val database: Database) {
     /**
      * 为animation更新staffs。智能处理关系映射表。
      */

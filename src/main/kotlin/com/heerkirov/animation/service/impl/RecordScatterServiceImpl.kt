@@ -89,13 +89,14 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
     @Transactional
     override fun groupScattered(animationId: Int, user: User): ScatterGroupRes {
         val rowSet = database.from(Records).innerJoin(Animations, Records.animationId eq Animations.id)
-                .select(Records.id, Records.progressCount, Records.scatterRecord, Animations.totalEpisodes)
+                .select(Records.id, Records.progressCount, Records.scatterRecord, Animations.totalEpisodes, Animations.publishedEpisodes)
                 .where { (Records.animationId eq animationId) and (Records.ownerId eq user.id) }
                 .firstOrNull() ?: throw NotFoundException("Record of animation $animationId not found.")
         val recordId = rowSet[Records.id]!!
         val progressCount = rowSet[Records.progressCount]!!
         val scatterRecord = rowSet[Records.scatterRecord]!!
         val totalEpisodes = rowSet[Animations.totalEpisodes]!!
+        val publishedEpisodes = rowSet[Animations.publishedEpisodes]!!
         val now = DateTimeUtil.now()
 
         val progress = if(progressCount == 0) null else database
@@ -104,7 +105,7 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
 
         if(progress == null || progress.watchedEpisodes >= totalEpisodes) {
             //沉降到新进度
-            val (newScatterRecord, groupedList) = groupInScatterRecord(scatterRecord, 1, now)
+            val (newScatterRecord, groupedList) = groupInScatterRecord(scatterRecord, 1, publishedEpisodes, now)
 
             if(groupedList.isEmpty()) {
                 return ScatterGroupRes(ScatterGroupRes.GroupToType.NONE, 0, 0, 0)
@@ -129,7 +130,7 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
             return ScatterGroupRes(ScatterGroupRes.GroupToType.NEW, progressCount + 1, groupedList.size, groupedList.size)
         }else{
             //沉降到现有进度
-            val (newScatterRecord, groupedList) = groupInScatterRecord(scatterRecord, progress.watchedEpisodes + 1, progress.watchedRecord.lastOrNull() ?: now)
+            val (newScatterRecord, groupedList) = groupInScatterRecord(scatterRecord, progress.watchedEpisodes + 1, publishedEpisodes, progress.watchedRecord.lastOrNull() ?: now)
 
             if(groupedList.isEmpty()) {
                 return ScatterGroupRes(ScatterGroupRes.GroupToType.NONE, progress.ordinal, progress.watchedEpisodes, 0)
@@ -157,7 +158,7 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
     /**
      * 从离散记录中抽取出可沉降的项。
      */
-    private fun groupInScatterRecord(scatterRecord: List<ScatterRecord>, fromEpisode: Int, prevItem: LocalDateTime): Pair<List<ScatterRecord>, List<LocalDateTime>> {
+    private fun groupInScatterRecord(scatterRecord: List<ScatterRecord>, fromEpisode: Int, totalEpisodes: Int, prevItem: LocalDateTime): Pair<List<ScatterRecord>, List<LocalDateTime>> {
         val scatterMap = HashMap<Int, LinkedList<LocalDateTime>>().apply {
             for ((episode, datetime) in scatterRecord) {
                 if(episode >= fromEpisode) {
@@ -167,7 +168,7 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
         }
         val groupedList = LinkedList<LocalDateTime>()
         var nextEpisode = fromEpisode
-        while (true) {
+        while (nextEpisode <= totalEpisodes) {
             val list = scatterMap[nextEpisode] ?: break
             val item = getClosestItem(list, groupedList.lastOrNull() ?: prevItem)
             groupedList.add(item)
