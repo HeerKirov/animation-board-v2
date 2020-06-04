@@ -51,63 +51,13 @@ class RecordSetterServiceImpl(@Autowired private val database: Database,
         val record = database.sequenceOf(Records).find { (it.animationId eq animationId) and (it.ownerId eq user.id) }
                 ?: throw NotFoundException("Record of animation $animationId not found.")
 
-        //计算watched episodes。当不为null时表示需要更新此值
-        val (totalEpisodes, watchedEpisodes) = if(form.watchedEpisodes == null || form.watchedEpisodes == record.watchedEpisodes) { Pair(null, null) }else{
-            if(record.latestProgressId == null) {
-                throw BadRequestException(ErrCode.INVALID_OPERATION, "Record of animation $animationId has no progress. Please create one first.")
-            }
-            val (totalEpisodes, publishedEpisodes) = database.from(Animations).select(Animations.totalEpisodes, Animations.publishedEpisodes)
-                    .where { Animations.id eq animationId }.first()
-                    .let { row -> Pair(row[Animations.totalEpisodes]!!, row[Animations.publishedEpisodes]!!) }
-            val watchedEpisodes = if(form.watchedEpisodes > publishedEpisodes) { publishedEpisodes }else{ form.watchedEpisodes }
-            Pair(totalEpisodes, watchedEpisodes)
-        }
-        //当需要更新watched时，计算status的更新目标
-        val status = when {
-            watchedEpisodes == null -> null
-            watchedEpisodes >= totalEpisodes!! -> RecordStatus.COMPLETED
-            record.progressCount > 1 -> RecordStatus.REWATCHING
-            else -> RecordStatus.WATCHING
-        }?.let { if(it == record.status) { null }else{ it } }
-        //状态被更新为completed，说明此record的状态发生了完成时切换
-        val toCompleted = status == RecordStatus.COMPLETED
-        //取用form的值，没有值，且完成时，会自动切换为false
-        val inDiary = when {
-            form.inDiary != null -> form.inDiary
-            toCompleted -> false
-            else -> null
-        }
-
         val now = DateTimeUtil.now()
 
         database.update(Records) {
             where { it.id eq record.id }
             if(form.seenOriginal != null) it.seenOriginal to form.seenOriginal
-            if(inDiary != null) it.inDiary to inDiary
-            if(watchedEpisodes != null) {
-                //更新watched episodes
-                it.watchedEpisodes to watchedEpisodes
-                //不为null说明status也发生了变化
-                if(status != null) it.status to status
-                //更新为已完成，且当前进度为1时，设置finish time
-                if(toCompleted && record.progressCount == 1) it.finishTime to now
-                //这属于活跃行为，因此更新last active
-                it.lastActiveTime to now
-                it.lastActiveEvent to ActiveEvent(if(toCompleted) { ActiveEventType.WATCH_COMPLETE }else{ ActiveEventType.WATCH_EPISODE }, listOf(watchedEpisodes))
-            }
-
+            if(form.inDiary != null) it.inDiary to form.inDiary
             it.updateTime to now
-        }
-
-        if(watchedEpisodes != null) {
-            val progress = database.sequenceOf(RecordProgresses).find { it.id eq record.latestProgressId!! }!!
-            database.update(RecordProgresses) {
-                where { it.id eq progress.id }
-                //当更新为已完成时，设置finish time
-                if(toCompleted) it.finishTime to now
-                //计算时间点记录表
-                it.watchedRecord to recordProcessor.calculateProgressWatchedRecord(progress.watchedRecord, record.watchedEpisodes, watchedEpisodes, now)
-            }
         }
     }
 

@@ -48,7 +48,6 @@ class AnimationServiceImpl(@Autowired private val database: Database,
     )
 
     override fun list(filter: AnimationFilter, currentUser: User?): ListResult<Animation> {
-        //TODO 在record功能完备后，添加seen filter 选项
         return database.from(Animations)
                 .let {
                     //当tag条件存在时，在查询中连接tag。

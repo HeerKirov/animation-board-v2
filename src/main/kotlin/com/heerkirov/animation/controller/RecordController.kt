@@ -4,13 +4,8 @@ import com.heerkirov.animation.aspect.authorization.Authorization
 import com.heerkirov.animation.aspect.authorization.UserIdentity
 import com.heerkirov.animation.aspect.validation.Body
 import com.heerkirov.animation.model.data.User
-import com.heerkirov.animation.model.form.ProgressCreateForm
-import com.heerkirov.animation.model.form.RecordCreateForm
-import com.heerkirov.animation.model.form.RecordPartialForm
-import com.heerkirov.animation.model.form.ScatterForm
-import com.heerkirov.animation.model.result.NextRes
-import com.heerkirov.animation.model.result.ProgressRes
-import com.heerkirov.animation.model.result.RecordDetailRes
+import com.heerkirov.animation.model.form.*
+import com.heerkirov.animation.model.result.*
 import com.heerkirov.animation.service.RecordGetterService
 import com.heerkirov.animation.service.RecordProgressService
 import com.heerkirov.animation.service.RecordScatterService
@@ -27,6 +22,7 @@ class RecordController(@Autowired private val recordGetterService: RecordGetterS
                        @Autowired private val recordScatterService: RecordScatterService) {
     @Authorization
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     fun create(@UserIdentity user: User, @Body form: RecordCreateForm): RecordDetailRes {
         recordSetterService.create(form, user)
         return recordGetterService.get(form.animationId, user)
@@ -47,6 +43,7 @@ class RecordController(@Autowired private val recordGetterService: RecordGetterS
 
     @Authorization
     @DeleteMapping("/{animationId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@UserIdentity user: User, @PathVariable animationId: Int): Any? {
         recordSetterService.delete(animationId, user)
         return null
@@ -66,33 +63,41 @@ class RecordController(@Autowired private val recordGetterService: RecordGetterS
 
     @Authorization
     @PostMapping("/{animationId}/progress")
+    @ResponseStatus(HttpStatus.CREATED)
     fun progressCreate(@UserIdentity user: User, @PathVariable animationId: Int, @Body form: ProgressCreateForm): ProgressRes {
         return recordProgressService.createProgress(animationId, form, user)
     }
 
     @Authorization
+    @PutMapping("/{animationId}/progress")
+    fun progressUpdate(@UserIdentity user: User, @PathVariable animationId: Int, @Body form: ProgressUpdateForm): ProgressRes {
+        return recordProgressService.updateLatestProgress(animationId, form, user)
+    }
+
+    @Authorization
     @DeleteMapping("/{animationId}/progress/{ordinal}")
-    fun progressDelete(@UserIdentity user: User, @PathVariable animationId: Int, @PathVariable ordinal: Int): Any? {
-        TODO()
-    }
-
-    @Authorization
-    @GetMapping("/{animationId}/episode-table")
-    fun episodeTable(@UserIdentity user: User, @PathVariable animationId: Int): Any {
-        TODO()
-    }
-
-    @Authorization
-    @PostMapping("/{animationId}/watch-scattered")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun watchScattered(@UserIdentity user: User, @PathVariable animationId: Int, @Body form: ScatterForm): Any? {
+    fun progressDelete(@UserIdentity user: User, @PathVariable animationId: Int, @PathVariable ordinal: Int): Any? {
+        recordProgressService.deleteProgress(animationId, ordinal, user)
+        return null
+    }
+
+    @Authorization
+    @GetMapping("/{animationId}/scatter")
+    fun scatterTable(@UserIdentity user: User, @PathVariable animationId: Int): List<ScatterItemRes> {
+        return recordScatterService.getScatterTable(animationId, user)
+    }
+
+    @Authorization
+    @PostMapping("/{animationId}/scatter/watch")
+    fun scatterWatch(@UserIdentity user: User, @PathVariable animationId: Int, @Body form: ScatterForm): Any? {
         recordScatterService.watchScattered(animationId, user, form.episode)
         return null
     }
 
     @Authorization
-    @PostMapping("/{animationId}/group-scattered")
-    fun groupScattered(@UserIdentity user: User, @PathVariable animationId: Int) {
-        TODO()
+    @PostMapping("/{animationId}/scatter/group")
+    fun scatterGroup(@UserIdentity user: User, @PathVariable animationId: Int): ScatterGroupRes {
+        return recordScatterService.groupScattered(animationId, user)
     }
 }

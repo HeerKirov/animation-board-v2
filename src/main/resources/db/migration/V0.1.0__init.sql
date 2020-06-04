@@ -110,19 +110,13 @@ CREATE TABLE record(
     id BIGSERIAL PRIMARY KEY,
     owner_id INTEGER NOT NULL,
     animation_id INTEGER NOT NULL,
-    -- 观看状态与记录
-    status SMALLINT NOT NULL,                       -- 观看状态(未开始/正在观看/已看完)
-    in_diary BOOLEAN NOT NULL DEFAULT FALSE,        -- 在日记本中
-    watched_quantity INTEGER NOT NULL,              -- 已观看集数(严谨表述：指独立的、有观看记录的集数)
-    watched_record JSONB NOT NULL DEFAULT '[]',     -- 独立的观看记录，记录每一话的观看时间
-    progress_count INTEGER NOT NULL,                -- 观看的进度数
-    latest_progress_id BIGINT,                      -- 最新一次进度的id
-
     seen_original BOOLEAN NOT NULL DEFAULT FALSE,  -- 看过原作
+    in_diary BOOLEAN NOT NULL DEFAULT FALSE,        -- 在日记本中
 
-    -- 关键时间点
-    subscription_time TIMESTAMP,                    -- 订阅时间
-    finish_time TIMESTAMP DEFAULT NULL,             -- 首次看完时间
+    scatter_record JSONB NOT NULL DEFAULT '[]',     -- 独立的观看记录，记录每一话的观看时间
+    progress_count INTEGER NOT NULL,                -- 观看的进度数
+
+    -- 活跃记录
     last_active_time TIMESTAMP DEFAULT NULL,        -- 上次活跃的时间
     last_active_event JSONB NOT NULL DEFAULT '{}',  -- 上次活跃的事件内容
 
@@ -137,6 +131,7 @@ CREATE TABLE record_progress(
     record_id BIGINT NOT NULL,
 
     ordinal INTEGER NOT NULL,                       -- 此进度的序列号
+    watched_episodes INTEGER NOT NULL DEFAULT 0,    -- 观看进度
     watched_record JSONB NOT NULL DEFAULT '[]',     -- 每一话的观看记录
     start_time TIMESTAMP,                           -- 进度开始时间
     finish_time TIMESTAMP                           -- 进度结束时间

@@ -1,7 +1,9 @@
 package com.heerkirov.animation.service.impl
 
 import com.heerkirov.animation.dao.Animations
+import com.heerkirov.animation.dao.RecordProgresses
 import com.heerkirov.animation.dao.Records
+import com.heerkirov.animation.enums.RecordStatus
 import com.heerkirov.animation.exception.NotFoundException
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.result.RecordDetailRes
@@ -18,14 +20,15 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                               @Autowired private val recordProcessor: RecordProcessor) : RecordGetterService {
 
     private val recordFields = arrayOf(
-            Animations.title, Records.seenOriginal, Records.status, Records.inDiary, Records.watchedRecord,
-            Animations.totalEpisodes, Animations.publishedEpisodes, Records.watchedEpisodes, Records.progressCount,
-            Records.subscriptionTime, Records.finishTime, Records.createTime, Records.updateTime
+            Animations.title, Records.seenOriginal, Records.inDiary, Records.scatterRecord,
+            Animations.totalEpisodes, Animations.publishedEpisodes, Records.progressCount,
+            Records.createTime, Records.updateTime, RecordProgresses.watchedEpisodes
     )
 
     override fun get(animationId: Int, user: User): RecordDetailRes {
         val rowSet = database.from(Records)
                 .innerJoin(Animations, Records.animationId eq Animations.id)
+                .leftJoin(RecordProgresses, (RecordProgresses.recordId eq Records.id) and (RecordProgresses.ordinal eq Records.progressCount))
                 .select(*recordFields)
                 .where { (Records.animationId eq animationId) and (Records.ownerId eq user.id) }
                 .firstOrNull()
@@ -33,24 +36,26 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
 
         val totalEpisodes = rowSet[Animations.totalEpisodes]!!
         val publishedEpisodes = rowSet[Animations.publishedEpisodes]!!
-        val watchedEpisodes = rowSet[Records.watchedEpisodes]!!
-        val watchedRecord = rowSet[Records.watchedRecord]!!
         val progressCount = rowSet[Records.progressCount]!!
-        val episodesCount = recordProcessor.calculateEpisodesCount(watchedRecord, progressCount, watchedEpisodes, publishedEpisodes)
+        val watchedEpisodes = rowSet[RecordProgresses.watchedEpisodes]
+
+        val status = when {
+            progressCount == 0 -> RecordStatus.NO_PROGRESS
+            watchedEpisodes!! >= totalEpisodes -> RecordStatus.COMPLETED
+            progressCount == 1 -> RecordStatus.WATCHING
+            else -> RecordStatus.REWATCHING
+        }
 
         return RecordDetailRes(
                 animationId = animationId,
                 title = rowSet[Animations.title]!!,
                 seenOriginal = rowSet[Records.seenOriginal]!!,
-                status = rowSet[Records.status]!!,
+                status = status,
                 inDiary = rowSet[Records.inDiary]!!,
                 totalEpisodes = totalEpisodes,
                 publishedEpisodes = publishedEpisodes,
-                watchedEpisodes = watchedEpisodes,
+                watchedEpisodes = watchedEpisodes ?: 0,
                 progressCount = progressCount,
-                episodesCount = episodesCount,
-                subscriptionTime = rowSet[Records.subscriptionTime]?.toDateTimeString(),
-                finishTime = rowSet[Records.finishTime]?.toDateTimeString(),
                 createTime = rowSet[Records.createTime]!!.toDateTimeString(),
                 updateTime = rowSet[Records.updateTime]!!.toDateTimeString()
         )

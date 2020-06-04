@@ -1,6 +1,5 @@
 package com.heerkirov.animation.util.relation
 
-import java.lang.RuntimeException
 import java.util.*
 import kotlin.NoSuchElementException
 import kotlin.collections.ArrayList

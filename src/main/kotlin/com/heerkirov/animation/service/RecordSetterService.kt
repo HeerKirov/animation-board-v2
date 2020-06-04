@@ -1,12 +1,8 @@
 package com.heerkirov.animation.service
 
 import com.heerkirov.animation.model.data.User
-import com.heerkirov.animation.model.form.ProgressForm
 import com.heerkirov.animation.model.form.RecordCreateForm
 import com.heerkirov.animation.model.form.RecordPartialForm
-import com.heerkirov.animation.model.result.NextRes
-import com.heerkirov.animation.model.result.ProgressRes
-import com.heerkirov.animation.model.result.RecordDetailRes
 
 interface RecordSetterService {
     fun create(form: RecordCreateForm, user: User)

@@ -5,11 +5,9 @@ import com.heerkirov.animation.dao.RecordProgresses
 import com.heerkirov.animation.dao.Records
 import com.heerkirov.animation.enums.ActiveEventType
 import com.heerkirov.animation.enums.ErrCode
-import com.heerkirov.animation.enums.RecordStatus
 import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.model.data.ActiveEvent
 import com.heerkirov.animation.model.data.User
-import com.heerkirov.animation.model.data.WatchedRecord
 import com.heerkirov.animation.model.form.RecordCreateForm
 import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.arrayListFor
@@ -28,15 +26,10 @@ class RecordProcessor(@Autowired private val database: Database) {
             it.ownerId to user.id
             it.animationId to form.animationId
             it.seenOriginal to false
-
-            it.status to RecordStatus.WATCHING
             it.inDiary to true
-            it.watchedEpisodes to 0
+
             it.progressCount to 1
-            it.latestProgressId to null
-            it.watchedRecord to emptyList()
-            it.subscriptionTime to now
-            it.finishTime to null
+            it.scatterRecord to emptyList()
 
             it.lastActiveTime to now
             it.lastActiveEvent to ActiveEvent(ActiveEventType.CREATE_RECORD)
@@ -44,17 +37,13 @@ class RecordProcessor(@Autowired private val database: Database) {
             it.updateTime to now
         } as Long
 
-        val progressId = database.insertAndGenerateKey(RecordProgresses) {
+        database.insert(RecordProgresses) {
             it.recordId to id
             it.ordinal to 1
+            it.watchedEpisodes to 0
             it.watchedRecord to emptyList()
             it.startTime to now
             it.finishTime to null
-        } as Long
-
-        database.update(Records) {
-            it.latestProgressId to progressId
-            where { Records.id eq id }
         }
     }
 
@@ -130,30 +119,16 @@ class RecordProcessor(@Autowired private val database: Database) {
                 it
             }
         }
-        //最后进度的watched不小于total时判定为已完成，否则判定为在看或重看
-        val status = when {
-            watchedEpisodes >= totalEpisodes -> RecordStatus.COMPLETED
-            form.progress.size == 1 -> RecordStatus.WATCHING
-            else -> RecordStatus.REWATCHING
-        }
-        //record的订阅时间和完成时间都是首个进度的对应时间
-        val subscriptionTime = form.progress.first().startTime
-        val finishTime = form.progress.first().finishTime
 
         //补充模式创建。按照表单提供的记录创建多个进度
         val id = database.insertAndGenerateKey(Records) {
             it.ownerId to user.id
             it.animationId to form.animationId
             it.seenOriginal to false
+            it.inDiary to (watchedEpisodes < totalEpisodes)    //当状态为完结时不放入日记
 
-            it.status to status
-            it.inDiary to (status != RecordStatus.COMPLETED)    //当状态为完结时不放入日记
-            it.watchedEpisodes to watchedEpisodes
             it.progressCount to form.progress.size
-            it.latestProgressId to null
-            it.watchedRecord to emptyList()
-            it.subscriptionTime to subscriptionTime
-            it.finishTime to finishTime
+            it.scatterRecord to emptyList()
 
             it.lastActiveTime to now
             it.lastActiveEvent to ActiveEvent(ActiveEventType.CREATE_RECORD)
@@ -167,22 +142,19 @@ class RecordProcessor(@Autowired private val database: Database) {
                 database.insert(RecordProgresses) {
                     it.recordId to id
                     it.ordinal to (i + 1)
+                    it.watchedEpisodes to totalEpisodes
                     it.watchedRecord to emptyList() //已完结的记录不需要再创建这个，不会再更新了
                     it.startTime to progressForm.startTime
                     it.finishTime to progressForm.finishTime
                 }
             }else{
-                val progressId = database.insertAndGenerateKey(RecordProgresses) {
+                database.insert(RecordProgresses) {
                     it.recordId to id
                     it.ordinal to (i + 1)
+                    it.watchedEpisodes to watchedEpisodes
                     it.watchedRecord to emptyList() //可以写但没有必要。真需要更新时会检查时间点的数目的
                     it.startTime to progressForm.startTime
-                    it.finishTime to (progressForm.finishTime ?: if(status == RecordStatus.COMPLETED) { now }else{ null }) //finishTime没写而实际已看完时，自动补全finishTime
-                } as Long
-
-                database.update(Records) {
-                    it.latestProgressId to progressId
-                    where { it.id eq id }
+                    it.finishTime to (progressForm.finishTime ?: if(watchedEpisodes >= totalEpisodes) { now }else{ null }) //finishTime没写而实际已看完时，自动补全finishTime
                 }
             }
         }
@@ -195,38 +167,16 @@ class RecordProcessor(@Autowired private val database: Database) {
             it.ownerId to user.id
             it.animationId to form.animationId
             it.seenOriginal to false
-
-            it.status to RecordStatus.NO_PROGRESS
             it.inDiary to false
-            it.watchedEpisodes to 0
+
             it.progressCount to 0
-            it.latestProgressId to null
-            it.watchedRecord to emptyList()
-            it.subscriptionTime to null
-            it.finishTime to null
+            it.scatterRecord to emptyList()
 
             it.lastActiveTime to now
             it.lastActiveEvent to ActiveEvent(ActiveEventType.CREATE_RECORD)
             it.createTime to now
             it.updateTime to now
         }
-    }
-
-    /**
-     * 计算每一话的观看总次数。
-     * 计算范围是1～watchedEpisodes话。如果是多次观看则是1～publishedEpisodes。
-     * 计算方案很简单，旧进度每个+1，最新一次进度根据watchedEpisodes算前面的+1后面的不加。零散观看记录分别计数。
-     */
-    fun calculateEpisodesCount(watchedRecord: List<WatchedRecord>, progressCount: Int, watchedEpisodes: Int, publishedEpisodes: Int): List<Int> {
-        //TODO 将离散数据表改为独立的API，并且提供时间点查询API
-        val size = if (progressCount > 1) publishedEpisodes else watchedEpisodes
-        val episodes = arrayListFor(size) { if(progressCount == 0 || it < watchedEpisodes) { progressCount }else{ progressCount - 1 } }
-        for ((episode, _) in watchedRecord) {
-            if(episode in 1..size) {
-                episodes[episode - 1] += 1
-            }
-        }
-        return episodes
     }
 
     /**

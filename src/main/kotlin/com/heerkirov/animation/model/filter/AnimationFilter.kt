@@ -14,6 +14,5 @@ data class AnimationFilter(@Limit val limit: Int?,
                            @Filter("publish_time") val publishTime: String?,
                            @Filter("sex_limit_level") val sexLimitLevel: SexLimitLevel?,
                            @Filter("violence_limit_level") val violenceLimitLevel: ViolenceLimitLevel?,
-                           @Filter("seen") val seen: Boolean?,
                            @Order(options = ["publish_time", "create_time", "update_time", "sex_limit_level", "violence_limit_level"],
                                    default = "-create_time") val order: List<Pair<Int, String>>)
