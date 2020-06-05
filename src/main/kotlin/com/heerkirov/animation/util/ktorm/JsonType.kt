@@ -1,5 +1,6 @@
 package com.heerkirov.animation.util.ktorm
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.heerkirov.animation.enums.RelationType
 import com.heerkirov.animation.enums.toRelationType
 import com.heerkirov.animation.util.*
@@ -49,6 +50,15 @@ class JacksonConverter<T: Any>(private val typeReference: TypeReference<T>) : Js
     }
 }
 
+class StringJacksonConverter : JsonConverter<String> {
+    override fun getter(json: String): String {
+        return json
+    }
+
+    override fun setter(obj: String): String {
+        return obj
+    }
+}
 
 class NullableDateTimeListConverter : JsonConverter<List<LocalDateTime?>> {
     override fun getter(json: String): List<LocalDateTime?> {
