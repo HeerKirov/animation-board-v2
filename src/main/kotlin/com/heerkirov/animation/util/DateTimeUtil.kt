@@ -72,6 +72,11 @@ fun LocalDate.toDateMonthString(): String = this.format(monthFormat)
 fun LocalDateTime.toDateTimeString(): String = this.format(dateTimeFormat)
 
 /**
+ * 将时间转换为毫秒时间戳。
+ */
+fun LocalDateTime.toTimestamp(): Long = this.toEpochSecond(ZoneOffset.UTC) * 1000L
+
+/**
  * 将UTC时间转换为目标时区的时间。
  */
 fun LocalDateTime.asZonedTime(zoneId: ZoneId): ZonedDateTime = this.atZone(ZoneId.of("UTC")).withZoneSameInstant(zoneId)
@@ -80,3 +85,13 @@ fun LocalDateTime.asZonedTime(zoneId: ZoneId): ZonedDateTime = this.atZone(ZoneI
  * 将目标时区时间转换为UTC时间。
  */
 fun ZonedDateTime.asUTCTime(): LocalDateTime = this.withZoneSameInstant(ZoneId.of("UTC")).toLocalDateTime()
+
+/**
+ * 计算a和b之间的周数差。
+ * 例如，当a在本周，b在下周时，返回1。
+ */
+fun weekDuration(a: LocalDateTime, b: LocalDateTime): Int {
+    val firstDayOfA = if(a.dayOfWeek.ordinal > 0) a.minusDays(a.dayOfWeek.ordinal.toLong()) else a
+    val firstDayOfB = if(b.dayOfWeek.ordinal > 0) b.minusDays(b.dayOfWeek.ordinal.toLong()) else b
+    return (Duration.between(firstDayOfA, firstDayOfB).toDays() / 7).toInt()
+}

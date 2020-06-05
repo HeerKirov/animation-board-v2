@@ -2,9 +2,56 @@ package com.heerkirov.animation.model.result
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.heerkirov.animation.enums.RecordStatus
+import com.heerkirov.animation.model.data.ActiveEvent
+import java.time.LocalDateTime
+
+data class DiaryResult(@JsonProperty("result") val result: List<DiaryItem>,
+                       @JsonProperty("night_time_table") val nightTimeTable: Boolean)
+
+data class DiaryItem(@JsonProperty("animation_id") val animationId: Int,
+                     @JsonProperty("title") val title: String,
+                     @JsonProperty("cover") val cover: String?,
+                     @JsonProperty("total_episodes") val totalEpisodes: Int,
+                     @JsonProperty("published_episodes") val publishedEpisodes: Int,
+                     @JsonProperty("watched_episodes") val watchedEpisodes: Int?,
+                     @JsonProperty("next_publish_plan") val nextPublishPlan: String?,
+                     @JsonProperty("status") val status: RecordStatus,
+                     @JsonProperty("subscription_time") val subscriptionTime: String)
+
+data class TimetableResult(@JsonProperty("result") val result: Map<Int, List<TimetableItem>>,
+                           @JsonProperty("night_time_table") val nightTimeTable: Boolean)
+
+data class TimetableItem(@JsonProperty("animation_id") val animationId: Int,
+                         @JsonProperty("title") val title: String,
+                         @JsonProperty("cover") val cover: String?,
+                         @JsonProperty("next_publish_time") val nextPublishTime: String,
+                         @JsonProperty("next_publish_episode") val nextPublishEpisode: Int)
+
+data class ActivityRes(@JsonProperty("animation_id") val animationId: Int,
+                       @JsonProperty("title") val title: String,
+                       @JsonProperty("cover") val cover: String?,
+                       @JsonProperty("active_time") val activeTime: String?,
+                       @JsonProperty("active_event") val activeEvent: ActiveEvent?,
+                       @JsonProperty("progress") val progress: Double?)
+
+data class HistoryRes(@JsonProperty("animation_id") val animationId: Int,
+                      @JsonProperty("title") val title: String,
+                      @JsonProperty("cover") val cover: String?,
+                      @JsonProperty("start_time") val startTime: String?,
+                      @JsonProperty("finish_time") val finishTime: String,
+                      @JsonProperty("ordinal") val ordinal: Int)
+
+data class FindRes(@JsonProperty("animation_id") val animationId: Int,
+                   @JsonProperty("title") val title: String,
+                   @JsonProperty("cover") val cover: String?,
+                   @JsonProperty("total_episodes") val totalEpisodes: Int,
+                   @JsonProperty("published_episodes") val publishedEpisodes: Int,
+                   @JsonProperty("watched_episodes") val watchedEpisodes: Int?,
+                   @JsonProperty("progress") val progress: Double?)
 
 data class RecordDetailRes(@JsonProperty("animation_id") val animationId: Int,
                            @JsonProperty("title") val title: String,
+                           @JsonProperty("cover") val cover: String?,
                            @JsonProperty("seen_original") val seenOriginal: Boolean,
                            @JsonProperty("status") val status: RecordStatus,
                            @JsonProperty("in_diary") val inDiary: Boolean,

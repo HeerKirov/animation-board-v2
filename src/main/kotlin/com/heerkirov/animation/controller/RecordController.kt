@@ -2,8 +2,13 @@ package com.heerkirov.animation.controller
 
 import com.heerkirov.animation.aspect.authorization.Authorization
 import com.heerkirov.animation.aspect.authorization.UserIdentity
+import com.heerkirov.animation.aspect.filter.Query
 import com.heerkirov.animation.aspect.validation.Body
 import com.heerkirov.animation.model.data.User
+import com.heerkirov.animation.model.filter.ActivityFilter
+import com.heerkirov.animation.model.filter.DiaryFilter
+import com.heerkirov.animation.model.filter.FindFilter
+import com.heerkirov.animation.model.filter.HistoryFilter
 import com.heerkirov.animation.model.form.*
 import com.heerkirov.animation.model.result.*
 import com.heerkirov.animation.service.RecordGetterService
@@ -20,6 +25,37 @@ class RecordController(@Autowired private val recordGetterService: RecordGetterS
                        @Autowired private val recordSetterService: RecordSetterService,
                        @Autowired private val recordProgressService: RecordProgressService,
                        @Autowired private val recordScatterService: RecordScatterService) {
+
+    @Authorization
+    @GetMapping("/diary")
+    fun diary(@UserIdentity user: User, @Query filter: DiaryFilter): DiaryResult {
+        return recordGetterService.diary(filter, user)
+    }
+
+    @Authorization
+    @GetMapping("/timetable")
+    fun timetable(@UserIdentity user: User): TimetableResult {
+        return recordGetterService.timetable(user)
+    }
+
+    @Authorization
+    @GetMapping("/activity")
+    fun activity(@UserIdentity user: User, @Query filter: ActivityFilter): ListResult<ActivityRes> {
+        return recordGetterService.activity(filter, user)
+    }
+
+    @Authorization
+    @GetMapping("/history")
+    fun history(@UserIdentity user: User, @Query filter: HistoryFilter): ListResult<HistoryRes> {
+        return recordGetterService.history(filter, user)
+    }
+
+    @Authorization
+    @GetMapping("/find")
+    fun find(@UserIdentity user: User, @Query filter: FindFilter): ListResult<FindRes> {
+        return recordGetterService.find(filter, user)
+    }
+
     @Authorization
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)

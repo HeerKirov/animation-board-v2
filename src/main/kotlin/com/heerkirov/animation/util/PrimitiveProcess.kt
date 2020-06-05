@@ -34,3 +34,11 @@ fun <T> T.runIf(predicate: Boolean, transform: (T) -> T): T {
         this
     }
 }
+
+fun <T, R: Comparable<R>> Iterable<T>.sortedByOptimally(selector: (T) -> R?): List<T> {
+    return this.asSequence().map { Pair(selector(it), it) }.sortedBy { it.first }.map { it.second }.toList()
+}
+
+fun <T, R: Comparable<R>> Iterable<T>.sortedByDescendingOptimally(selector: (T) -> R?): List<T> {
+    return this.asSequence().map { Pair(selector(it), it) }.sortedByDescending { it.first }.map { it.second }.toList()
+}
