@@ -1,16 +1,17 @@
 package com.heerkirov.animation.model.form
 
 import com.heerkirov.animation.aspect.validation.Field
+import com.heerkirov.animation.aspect.validation.MaxLength
 import com.heerkirov.animation.aspect.validation.Min
 import com.heerkirov.animation.aspect.validation.NotBlank
 import com.heerkirov.animation.enums.*
 import java.time.LocalDateTime
 
-data class AnimationForm(@Field("title") @NotBlank val title: String,
-                         @Field("origin_title") @NotBlank val originTitle: String? = null,
-                         @Field("other_title") @NotBlank val otherTitle: String? = null,
+data class AnimationForm(@Field("title") @NotBlank @MaxLength(128) val title: String,
+                         @Field("origin_title") @NotBlank @MaxLength(128) val originTitle: String? = null,
+                         @Field("other_title") @NotBlank @MaxLength(128) val otherTitle: String? = null,
                          @Field("introduction") val introduction: String? = null,
-                         @Field("keyword") val keyword: String? = null,
+                         @Field("keyword") @MaxLength(255) val keyword: String? = null,
                          @Field("sex_limit_level") val sexLimitLevel: SexLimitLevel? = null,
                          @Field("violence_limit_level") val violenceLimitLevel: ViolenceLimitLevel? = null,
                          @Field("original_work_type") val originalWorkType: OriginalWorkType? = null,
