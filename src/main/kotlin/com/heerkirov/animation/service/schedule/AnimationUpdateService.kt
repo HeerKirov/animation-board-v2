@@ -67,6 +67,7 @@ class AnimationUpdateService(@Autowired private val database: Database,
                 val users = database.from(Users)
                         .innerJoin(Records, (Records.ownerId eq Users.id) and (Records.animationId eq id))
                         .select(Users.id, Users.username, Users.isStaff, Users.setting)
+                        .where { Records.inDiary eq true }
                         .map { Users.createEntity(it) }
 
                 for (user in users) {

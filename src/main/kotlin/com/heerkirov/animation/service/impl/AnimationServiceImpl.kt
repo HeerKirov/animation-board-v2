@@ -194,7 +194,11 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             staffProcessor.updateStaffs(id, form.staffs, creating = true)
         }
         if(form.relations.isNotEmpty()) {
-            relationProcessor.updateRelationTopology(id, form.relations)
+            try {
+                relationProcessor.updateRelationTopology(id, form.relations)
+            }catch (e: NoSuchElementException) {
+                throw BadRequestException(ErrCode.NOT_EXISTS, e.message)
+            }
         }
 
         return id

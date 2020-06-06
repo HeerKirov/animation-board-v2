@@ -9,7 +9,7 @@ import com.heerkirov.animation.model.form.toModel
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.filter.MessageFilter
 import com.heerkirov.animation.model.form.MarkAsReadForm
-import com.heerkirov.animation.model.result.IsStaffRes
+import com.heerkirov.animation.model.result.StatusRes
 import com.heerkirov.animation.model.result.MessageRes
 import com.heerkirov.animation.model.result.SettingRes
 import com.heerkirov.animation.model.result.toRes
@@ -22,10 +22,10 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/user")
 class UserController(@Autowired private val userService: UserService,
                      @Autowired private val messageService: MessageService) {
-    @Authorization
-    @GetMapping("/staff")
-    fun isStaff(@UserIdentity user: User): IsStaffRes {
-        return IsStaffRes(user.isStaff)
+    @Authorization(forge = false)
+    @GetMapping("/status")
+    fun status(@UserIdentity user: User?): StatusRes {
+        return StatusRes(user != null, user?.isStaff, user?.username)
     }
 
     @Authorization

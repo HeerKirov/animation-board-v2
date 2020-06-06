@@ -1,5 +1,6 @@
 package com.heerkirov.animation.model.data
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.heerkirov.animation.enums.MessageType
 import java.time.LocalDateTime
 
@@ -10,4 +11,6 @@ data class Message(val id: Long,
                    val read: Boolean,
                    val createTime: LocalDateTime)
 
-data class ContentPublish(val animationId: Int, val oldEpisodes: Int, val newEpisodes: Int)
+data class ContentPublish(@JsonProperty("animation_id") val animationId: Int,
+                          @JsonProperty("old_episodes") val oldEpisodes: Int,
+                          @JsonProperty("new_episodes") val newEpisodes: Int)

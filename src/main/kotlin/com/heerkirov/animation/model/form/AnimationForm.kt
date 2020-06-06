@@ -25,11 +25,11 @@ data class AnimationForm(@Field("title") @NotBlank @MaxLength(128) val title: St
                          @Field("staffs") val staffs: Map<StaffTypeInAnimation, List<Int>> = emptyMap(),
                          @Field("relations") val relations: Map<RelationType, List<Int>> = emptyMap())
 
-class AnimationPartialForm(@Field("title") @NotBlank val title: String? = null,
-                           @Field("origin_title") @NotBlank val originTitle: String? = null,
-                           @Field("other_title") @NotBlank val otherTitle: String? = null,
+class AnimationPartialForm(@Field("title") @NotBlank @MaxLength(128) val title: String? = null,
+                           @Field("origin_title") @NotBlank @MaxLength(128) val originTitle: String? = null,
+                           @Field("other_title") @NotBlank @MaxLength(128) val otherTitle: String? = null,
                            @Field("introduction") val introduction: String? = null,
-                           @Field("keyword") val keyword: String? = null,
+                           @Field("keyword") @MaxLength(255) val keyword: String? = null,
                            @Field("sex_limit_level") val sexLimitLevel: SexLimitLevel? = null,
                            @Field("violence_limit_level") val violenceLimitLevel: ViolenceLimitLevel? = null,
                            @Field("original_work_type") val originalWorkType: OriginalWorkType? = null,

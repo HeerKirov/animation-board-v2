@@ -1,0 +1,978 @@
+openapi: "3.0.0"
+info:
+  title: Animation Board v2
+  version: 0.1.0
+  description: |
+    Animation Board的v2版本。
+    这是一个Basic Service下属的应用，使用BS提供的用户认证服务。有关BS的使用，见[Basic Service REST API](http://www.heerkirov.com/swagger/?url=/swagger/docs/basic-service.yaml)。
+    ## 更新日志
+    ### v0.1.0
+    Animation Board v2在v1的版本上做了一些改进和重构。包括：
+    1. 精简了API，使API的构成清晰可读，同时保证满足业务需求的最小参数。
+    2. 将更多业务内容转移到后端实现，而非要求前端实现。
+    3. 优化的数据库表和关联结构。
+    4. 重新设计的日记模型和API结构。
+    ## 用户认证
+    系统采用BS系统的认证方式，即使用Bearer Token进行唯一认证。发送请求时，首先从BS系统取得有效的Token，随后使用如下header：
+    ```
+    Authorization: Bearer XXXXXX
+    ```
+    不同部分的API有不同的授权要求：
+    - 公共数据库部分的SAFE METHOD不需要任何认证，未登录用户也可以访问。
+    - 公共数据库部分的UNSAFE METHOD需要管理员身份的用户。
+    - 个人部分的API需要登录认证。
+    ## 公共错误
+    所有错误都遵循一个相同的返回格式：
+    ```json
+    {"code": "ERROR_CODE", "message": "Error message"}
+    ```
+    下列几类错误返回是任何API都可能抛出的。不再在API详情中单独列出。
+    ### 400 Bad Request
+    * `EMPTY_REQUEST_BODY` - 需要请求内容
+    * `INVALID_REQUEST_BODY` - 请求内容无法解析
+    * `INVALID_CONTENT_TYPE` - 请求内容的Content-Type不正确
+    * `TYPE_ERROR` - 参数类型错误，请参照类型schema更正
+    * `PARAM_ERROR` - 参数格式或内容错误，请参照类型schema和参数说明更正
+    * `PARAM_REQUIRED` - 参数缺失，请参照请求要求补充参数
+    ### 401 Unauthorized
+    * `UNAUTHORIZED` - 没有提供认证信息，或认证信息无效，请提供正确格式的Token
+    * `AUTHENTICATION_FAILED` - 认证失败，请提供有效的Token
+    ### 403 Forbidden
+    * `FORBIDDEN` - 没有访问权限，请更换更高权限的账户
+    ### 404 Not Found
+    * `NOT_FOUND` - 找不到此API指定的资源
+    * 没有此API。
+    ### 500 Internal Server Error
+    * `INTERNAL_SERVER_ERROR` - 服务器发生内部错误。
+
+servers:
+  - description: "线上服务器"
+    url: "https://animation.heerkirov.com"
+  - description: "本地服务器"
+    url: "http://localhost:8080"
+tags:
+  - name: "Animation"
+    description: "动画数据库"
+  - name: "Tag"
+    description: "标签数据库"
+  - name: "Staff"
+    description: "相关人员数据库"
+  - name: "Record"
+    description: "用户观看记录"
+  - name: "Comment"
+    description: "用户评价"
+  - name: "User"
+    description: "用户相关服务"
+
+paths:
+  /api/database/animations:
+    get:
+      summary: 查看动画列表
+      tags: [Animation]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+        - name: tag
+          in: query
+          description: 按标签过滤。参数值既可以是tag.name，也可以是tag.id
+          schema: {type: string}
+        - name: staff
+          in: query
+          description: 按相关人员过滤。参数值既可以是staff.name，也可以是staff.id
+          schema: {type: string}
+        - name: staff_type
+          in: query
+          description: 按相关人员关联类型过滤。配合`staff`参数使用。
+          schema: {$ref: '#/components/schemas/StaffType'}
+        - name: original_work_type
+          in: query
+          description: 按原作类型过滤
+          schema: {$ref: '#/components/schemas/OriginalWorkType'}
+        - name: publish_type
+          in: query
+          description: 按放送类型过滤
+          schema: {$ref: '#/components/schemas/PublishType'}
+        - name: publish_time
+          in: query
+          description: 按放送时间过滤。指定年月则精确过滤年月，只指定年则按年过滤
+          schema: {type: string, format: 'yyyy[-MM]'}
+        - name: sex_limit_level
+          in: query
+          description: 按分级(性)过滤
+          schema: {$ref: '#/components/schemas/SexLimitLevel'}
+        - name: violence_limit_level
+          in: query
+          description: 按分级(暴力)过滤
+          schema: {$ref: '#/components/schemas/ViolenceLimitLevel'}
+        - name: order
+          in: query
+          description: 排序。使用逗号(`,`)组合排序，使用减号(`-`)降序排序
+          schema:
+            type: string
+            enum: [publish_time, create_time, update_time, sex_limit_level, violence_limit_level]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/AnimationRes'}
+    post:
+      summary: 创建新的动画条目
+      tags: [Animation]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AnimationForm'}
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AnimationDetailRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `NOT_EXISTS`
+                        * "Tag {} not exists." - 此id的tag不存在
+                        * "Staff {} not exists." - 此id的staff不存在
+                        * "Cannot find animation {}." - 此id的animation不存在
+  /api/database/animations/{id}:
+    get:
+      summary: 查看动画详情
+      tags: [Animation]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AnimationDetailRes'}
+    patch:
+      summary: 更新动画条目
+      tags: [Animation]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AnimationPartialForm'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AnimationDetailRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `NOT_EXISTS`
+                        * "Tag {} not exists." - 此id的tag不存在
+                        * "Staff {} not exists." - 此id的staff不存在
+                        * "Cannot find animation {}." - 此id的animation不存在
+    delete:
+      summary: 删除动画条目
+      tags: [Animation]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        204:
+          description: No Content
+  /api/database/tags:
+    get:
+      summary: 查看标签列表
+      tags: [Tag]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+        - name: order
+          in: query
+          description: 排序。使用逗号(`,`)组合排序，使用减号(`-`)降序排序
+          schema:
+            type: string
+            enum: [name, create_time, update_time]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/TagRes'}
+    post:
+      summary: 创建新的标签
+      tags: [Tag]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TagForm'}
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TagDetailRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `ALREADY_EXISTS` - 此name的tag已经存在
+  /api/database/tags/{id}:
+    get:
+      summary: 查看标签详情
+      tags: [Tag]
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TagDetailRes'}
+    put:
+      summary: 更新标签内容
+      tags: [Tag]
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TagForm'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TagDetailRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `ALREADY_EXISTS` - 此name的tag已经存在
+    delete:
+      summary: 删除标签
+      tags: [Tag]
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      responses:
+        204:
+          description: No Content
+  /api/database/staffs:
+    get:
+      summary: 查看相关人员列表
+      tags: [Staff]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+        - name: is_organization
+          in: query
+          description: 按是否为组织过滤
+          schema: {type: boolean}
+        - name: occupation
+          in: query
+          description: 按相关人员职业过滤
+          schema: {$ref: '#/components/schemas/StaffOccupation'}
+        - name: order
+          in: query
+          description: 排序。使用逗号(`,`)组合排序，使用减号(`-`)降序排序
+          schema:
+            type: string
+            enum: [name, create_time, update_time]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/StaffRes'}
+    post:
+      summary: 创建新关联人员
+      tags: [Staff]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/StaffForm'}
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StaffRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `ALREADY_EXISTS` - 此name的staff已经存在
+  /api/database/staffs/{id}:
+    get:
+      summary: 查看关联人员详情
+      tags: [Staff]
+      parameters:
+        - $ref: '#/components/parameters/StaffId'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StaffRes'}
+    put:
+      summary: 更新关联人员信息
+      tags: [Staff]
+      parameters:
+        - $ref: '#/components/parameters/StaffId'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/StaffForm'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StaffRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `ALREADY_EXISTS` - 此name的staff已经存在
+    delete:
+      summary: 删除关联人员
+      tags: [Staff]
+      parameters:
+        - $ref: '#/components/parameters/StaffId'
+      responses:
+        204:
+          description: No Content
+  /api/user/status:
+    get:
+      summary: 检验用户登录状态
+      tags: [User]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StatusRes'}
+  /api/user/setting:
+    get:
+      summary: 查看用户设置
+      tags: [User]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Setting'}
+    put:
+      summary: 更改用户设置
+      tags: [User]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Setting'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Setting'}
+  /api/user/messages:
+    get:
+      summary: 查看消息列表
+      tags: [User]
+      parameters:
+        - name: from
+          in: query
+          description: 从指定的消息id开始(不包括)向后过滤
+          schema: {type: integer}
+        - name: unread
+          in: query
+          description: 按是否已读过滤
+          schema: {type: boolean}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/MessageRes'}
+  /api/user/messages/count:
+    get:
+      summary: 查看消息数量
+      tags: [User]
+      parameters:
+        - name: from
+          in: query
+          description: 从指定的消息id开始(不包括)向后过滤
+          schema: {type: integer}
+        - name: unread
+          in: query
+          description: 按是否已读过滤
+          schema: {type: boolean}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: integer
+                description: 符合此条件的消息数量
+  /api/user/messages/mark-as/read:
+    post:
+      summary: 将消息标记为已读
+      tags: [User]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MarkAsReadForm'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: integer
+                description: 实际成功标记的消息数量
+components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      description: 分页参数，一次请求的记录数
+      schema:
+        type: integer
+        minimum: 0
+    Offset:
+      name: offset
+      in: query
+      description: 分页参数，请求开始的偏移量
+      schema:
+        type: integer
+        minimum: 0
+    Search:
+      name: search
+      in: query
+      description: 模糊搜索
+      schema:
+        type: string
+    AnimationId:
+      name: id
+      in: path
+      required: true
+      description: animation id
+      schema: {type: integer}
+    TagId:
+      name: id
+      in: path
+      required: true
+      description: tag id
+      schema: {type: integer}
+    StaffId:
+      name: id
+      in: path
+      required: true
+      description: staff id
+      schema: {type: integer}
+  schemas:
+    AnimationForm:
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartialForm'
+        - type: object
+          required: [title]
+    AnimationPartialForm:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 128
+          description: 标题，不允许为空
+        origin_title:
+          type: string
+          maxLength: 128
+          description: 原语言标题，不允许为空
+        other_title:
+          type: string
+          maxLength: 128
+          description: 其他标题，不允许为空
+        introduction:
+          type: string
+          description: 简介
+        keyword:
+          type: string
+          maxLength: 255
+          description: 关键字
+        sex_limit_level:
+          $ref: '#/components/schemas/SexLimitLevel'
+        violence_limit_level:
+          $ref: '#/components/schemas/ViolenceLimitLevel'
+        original_work_type:
+          $ref: '#/components/schemas/OriginalWorkType'
+        publish_type:
+          $ref: '#/components/schemas/PublishType'
+        episode_duration:
+          type: integer
+          minimum: 0
+          description: 每集平均时长(分钟)
+        publish_time:
+          type: string
+          format: yyyy-MM
+          description: 动画放送时间
+        total_episodes:
+          type: integer
+          minimum: 1
+          description: 总集数
+        published_episodes:
+          type: integer
+          minimum: 0
+          description: 已发布集数。如果超过了总集数，会被自动限制为总集数
+        publish_plan:
+          type: array
+          items:
+            type: string
+            format: yyyy-MM-ddThh:mm:ssZ
+          description: |
+            接下来该动画发布的时间点。
+            总项数不会超出total_episodes - published_episodes。超出的部分会被截去。
+            提交时，如果存在项已经满足发布条件，会立即发布，记入发布记录，并加到published_episodes上。
+            因此，如果想创建有发布记录的项，应当使用publish_plan而不是published_episodes参数。
+        tags:
+          type: array
+          items:
+            oneOf:
+              - type: string
+                description: "tag.id"
+              - type: integer
+                description: "tag.name"
+          description: |
+            动画关联的标签。列表可放入tag.id或tag.name，会自动查找匹配的tag。
+            放入tag.name时，如果此tag不存在，将*自动创建*新的tag。
+        staffs:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: integer
+          description: |
+            动画关联的相关人员。key表示关联的类型，见StaffType；value表示在此类型下关联的staff.id的列表。
+        relations:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: integer
+          description: |
+            动画关联的其他动画。key表示关联的类型，见RelationType；value表示在此类型下关联的animation.id的列表。
+            动画之间的关联可能形成关系网。实际上，编写relations时只需要按最简原则编写每个animation的直接关系，程序会自动推导出每个animation的所有直接和间接关联项，以及这些关联项的正确关系。
+    TagForm:
+      type: object
+      required: [name, introduction]
+      properties:
+        name:
+          type: string
+          maxLength: 16
+          uniqueItems: true
+          description: 标签名称。不能为空
+        introduction:
+          type: string
+          description: 标签介绍
+    StaffForm:
+      type: object
+      required: [name, is_organization]
+      properties:
+        name:
+          type: string
+          maxLength: 64
+          description: 相关人员名称。不能为空
+        origin_name:
+          type: string
+          maxLength: 64
+          description: 相关人员原语言名称。不能为空
+        remark:
+          type: string
+          maxLength: 64
+          description: 相关人员的别称。不能为空
+        is_organization:
+          type: boolean
+          description: staff是否为组织。否表示个人
+        occupation:
+          $ref: '#/components/schemas/StaffOccupation'
+    MarkAsReadForm:
+      type: object
+      required: [message_ids]
+      properties:
+        message_ids:
+          type: array
+          items:
+            type: integer
+            description: 要标记为已读的message id列表
+    AnimationRes:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: animation id
+          uniqueItems: true
+        title:
+          type: string
+          description: 标题
+        cover:
+          type: string
+          nullable: true
+          description: 封面文件的文件名
+        publish_time:
+          type: string
+          format: yyyy-MM
+          nullable: true
+          description: 动画放送时间
+        total_episodes:
+          type: integer
+          description: 总集数
+        published_episode:
+          type: integer
+          description: 已发布集数。不会超过总集数
+        create_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 记录创建时间
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 记录更新时间
+    AnimationDetailRes:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: animation id
+          uniqueItems: true
+        title:
+          type: string
+          description: 标题
+        origin_title:
+          type: string
+          nullable: true
+          description: 原语言标题
+        other_title:
+          type: string
+          nullable: true
+          description: 其他标题
+        cover:
+          type: string
+          nullable: true
+          description: 封面文件的文件名
+        publish_type:
+          $ref: '#/components/schemas/PublishType'
+        publish_time:
+          type: string
+          format: yyyy-MM
+          description: 动画放送时间
+        episode_duration:
+          type: integer
+          description: 每集平均时长(分钟)
+        total_episodes:
+          type: integer
+          description: 总集数
+          nullable: false
+        published_episode:
+          type: integer
+          description: 已发布集数。不会超过总集数
+          nullable: false
+        publish_plan:
+          type: array
+          items:
+            type: string
+            format: yyyy-MM-ddThh:mm:ssZ
+            nullable: false
+          description: 接下来该动画的发布时间点
+          nullable: false
+        introduction:
+          type: string
+          description: 简介
+        keyword:
+          type: string
+          description: 关键字
+        sex_limit_level:
+          $ref: '#/components/schemas/SexLimitLevel'
+        violence_limit_level:
+          $ref: '#/components/schemas/ViolenceLimitLevel'
+        original_work_type:
+          $ref: '#/components/schemas/OriginalWorkType'
+        tags:
+          type: array
+          description: 关联的标签
+          items:
+            $ref: '#/components/schemas/TagRes'
+        staffs:
+          type: array
+          description: 关联的相关人员
+          items:
+            $ref: '#/components/schemas/StaffRelationRes'
+        relations:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: integer
+          description: 用户编写的关联关系
+        relations_topology:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                description: animation id
+              title:
+                type: string
+                description: 标题
+              cover:
+                type: string
+                nullable: true
+                description: 封面文件的文件名
+              relation_type:
+                $ref: '#/components/schemas/RelationType'
+          description: 全量关联关系
+        create_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 记录创建时间
+          nullable: false
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 记录更新时间
+          nullable: false
+    TagRes:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: tag id
+        name:
+          type: string
+          description: 标签名称
+    TagDetailRes:
+      allOf:
+        - $ref: '#/components/schemas/TagRes'
+        - type: object
+          properties:
+            introduction:
+              type: string
+              nullable: true
+              description: 标签介绍
+            create_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 创建时间
+            update_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 更新时间
+    StaffRes:
+      allOf:
+        - $ref: '#/components/schemas/StaffRelationRes'
+        - type: object
+          properties:
+            origin_name:
+              type: string
+              nullable: true
+              description: 相关人员原语言名称
+            remark:
+              type: string
+              nullable: true
+              description: 相关人员的别称
+            create_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 创建时间
+            update_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 更新时间
+    StaffRelationRes:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: staff id
+        name:
+          type: string
+          description: staff名称
+        cover:
+          type: string
+          nullable: true
+          description: staff头像文件名
+        is_organization:
+          type: boolean
+          description: staff是否为组织。否表示个人
+        occupation:
+          $ref: '#/components/schemas/StaffOccupation'
+        staff_type:
+          $ref: '#/components/schemas/StaffType'
+    StatusRes:
+      type: object
+      properties:
+        is_login:
+          type: boolean
+          description: 用户是否已经登录
+        is_staff:
+          type: boolean
+          nullable: true
+          description: 用户是否拥有此系统的管理员身份
+        username:
+          type: string
+          description: 用户名
+    MessageRes:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: message id
+        type:
+          $ref: '#/components/schemas/MessageType'
+        content:
+          description: 根据type决定content的内容。
+          oneOf:
+            - $ref: '#/components/schemas/MessageContentPublish'
+    MessageContentPublish:
+      type: object
+      description: 动画更新推送。(old, new]区间是新更新的集数。
+      properties:
+        animation_id:
+          type: integer
+          description: animation id
+        old_episodes:
+          type: integer
+          description: 更新前的episodes
+        new_episodes:
+          type: integer
+          description: 更新后的episodes
+    ListResult:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: 不包含分页条件时，此列表的总记录数
+        result:
+          type: array
+          items:
+            type: object
+    ErrResult:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+    Setting:
+      type: object
+      required: [animation_update_notice, night_time_table, auto_update_statistics, timezone]
+      properties:
+        animation_update_notice:
+          type: boolean
+          description: 日记中的动画更新时推送消息
+        night_time_table:
+          type: boolean
+          description: 采用夜晚型时间表，凌晨2:00之前的动画在时间表上算作前一天。
+        auto_update_statistics:
+          type: boolean
+          description: 后台自动更新统计项目
+        timezone:
+          type: integer
+          description: 用户的主要时区。表示单位是分钟，换算成时区
+    OriginalWorkType:
+      type: string
+      nullable: true
+      description: 原作类型
+      enum: [ORIGINAL, MANGA, NOVEL, GAME, OTHER]
+    PublishType:
+      type: string
+      nullable: true
+      description: 放送类型
+      enum: [TV_AND_WEB, MOVIE, OVA_AND_OAD]
+    SexLimitLevel:
+      type: string
+      nullable: true
+      description: 分级(性)
+      enum: [ALL, R12, R15, R17, R18]
+    ViolenceLimitLevel:
+      type: string
+      nullable: true
+      description: 分级(暴力)
+      enum: [NO, NORMAL, MILD, SEVERE, RESTRICTED]
+    RelationType:
+      type: string
+      description: 动画关联关系类型
+      enum: [PREV, NEXT, FANWAI, MAIN_ARTICLE, RUMOR, TRUE_PASS, SERIES]
+    StaffOccupation:
+      type: string
+      nullable: true
+      description: 相关人员职业类型信息
+      enum: [ANIMATION_COMPANY, GAME_COMPANY, NOVEL_AUTHOR, MANGA_AUTHOR, ANIMATION_STAFF, OTHER]
+    StaffType:
+      type: string
+      description: 相关人员关联类型
+      enum: [AUTHOR, STAFF, COMPANY]
+    RecordStatus:
+      type: string
+      description: 记录的进度状态
+      enum: [NO_PROGRESS, WATCHING, REWATCHING, COMPLETED]
+    ActiveEventType:
+      type: string
+      description: 记录的活动事件类型
+      enum: [CREATE_RECORD, CREATE_PROGRESS, WATCH_EPISODE]
+    MessageType:
+      type: string
+      description: 消息类型
+      enum: [PUBLISH, OTHER]

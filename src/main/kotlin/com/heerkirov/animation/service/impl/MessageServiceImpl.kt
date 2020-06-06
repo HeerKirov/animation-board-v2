@@ -21,6 +21,8 @@ class MessageServiceImpl(@Autowired private val database: Database,
                 .map { Messages.createEntity(it) }
                 .map { MessageRes(it.id, it.type, messageProcessor.parseContentToObject(it.type, it.content), it.read, it.createTime.toDateTimeString()) }
                 .toList()
+        //TODO 直接对primitive content obj的转换不能满足消息列表的需求。
+        //      对于publish消息，需要联动携带animation的信息。
     }
 
     override fun messageCount(filter: MessageFilter, user: User): Int {
