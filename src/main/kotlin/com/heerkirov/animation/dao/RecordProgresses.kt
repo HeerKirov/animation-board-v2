@@ -1,7 +1,8 @@
 package com.heerkirov.animation.dao
 
 import com.heerkirov.animation.model.data.RecordProgress
-import com.heerkirov.animation.util.ktorm.NullableDateTimeListConverter
+import com.heerkirov.animation.util.ktorm.DateTimeConverter
+import com.heerkirov.animation.util.ktorm.NullableListConverter
 import com.heerkirov.animation.util.ktorm.json
 import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
@@ -11,7 +12,7 @@ object RecordProgresses : BaseTable<RecordProgress>("record_progress") {
     val recordId by long("record_id")
     val ordinal by int("ordinal")
     val watchedEpisodes by int("watched_episodes")
-    val watchedRecord by json("watched_record", NullableDateTimeListConverter())
+    val watchedRecord by json("watched_record", NullableListConverter(DateTimeConverter()))
     val startTime by datetime("start_time")
     val finishTime by datetime("finish_time")
 

@@ -76,7 +76,7 @@ class CommentServiceImpl(@Autowired private val database: Database) : CommentSer
                     if(filter.minScore != null) it += Comments.score greaterEq filter.minScore
                     if(filter.maxScore != null) it += Comments.score lessEq filter.maxScore
                 }
-                .orderBy(Comments.score.desc())
+                .orderBy(Comments.score.desc(), Comments.createTime.desc())
                 .limit(filter.offset ?: 0, filter.limit ?: 0)
                 .toListResult { CommentRankRes(
                         it[Animations.id]!!,

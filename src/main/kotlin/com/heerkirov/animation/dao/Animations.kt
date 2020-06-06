@@ -22,8 +22,8 @@ object Animations : BaseTable<Animation>("animation") {
     val episodeDuration by int("episode_duration")
     val totalEpisodes by int("total_episodes")
     val publishedEpisodes by int("published_episodes")
-    val publishedRecord by json("published_record", NullableDateTimeListConverter())
-    val publishPlan by json("publish_plan", DateTimeListConverter())
+    val publishedRecord by json("published_record", NullableListConverter(DateTimeConverter()))
+    val publishPlan by json("publish_plan", ListConverter(DateTimeConverter()))
 
     val introduction by text("introduction")
     val keyword by varchar("keyword")

@@ -86,6 +86,44 @@ class AnimationRelationProcessor(@Autowired private val database: Database) {
     }
 
     /**
+     * 对全部animation的relation进行更新。
+     * @return 有多少animation得到了更新
+     */
+    fun updateAllRelationTopology(): Int {
+        val elements = database.from(Animations)
+                .select(Animations.id, Animations.relations, Animations.relationsTopology, Animations.createTime)
+                .orderBy(Animations.createTime.asc())
+                .map { AnimationModel(it[Animations.id]!!, it[Animations.relations]!!, it[Animations.relationsTopology]!!, it[Animations.createTime]!!) }
+
+        val maps = elements.map { Pair(it.id, it) }.toMap()
+
+        val graph = RelationGraph<AnimationModel, RelationType>(elements.toTypedArray()) {
+            for (element in elements) {
+                for ((r, list) in element.relations.entries) {
+                    for (i in list) {
+                        addRelation(element, r, maps[i] ?: throw NoSuchElementException("Cannot find animation $i."))
+                    }
+                }
+            }
+        }
+
+        var num = 0
+        database.batchUpdate(Animations) {
+            for (element in elements) {
+                val topology = graph[element]
+                if(topology.isNotEmpty()) {
+                    item {
+                        where { it.id eq element.id }
+                        it.relationsTopology to topology
+                    }
+                    num += 1
+                }
+            }
+        }
+        return num
+    }
+
+    /**
      * 从一个animation的全部关联中移除此animation。
      * 首先根据全量拓扑，找出所有关联对象。将除原对象外的所有关联对象放入图。
      * 遍历这些对象的所有直接关联关系，从之中移除全部原对象，然后将剩余关系放入图。

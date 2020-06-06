@@ -9,4 +9,4 @@ data class UserSetting(val animationUpdateNotice: Boolean = false,
                        val nightTimeTable: Boolean = false,
                        val autoUpdateStatistics: Boolean = true)
 //可选的新选项：
-//  + 时区
+//TODO + 时区
