@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.view.RedirectView
 
-@RestController("/api/database/cover/{type}/{file}")
+@RestController("/api/database/cover")
 class CoverController(@Autowired private val coverService: CoverService) {
-    @GetMapping("")
+    @GetMapping("/{type}/{file}")
     fun get(@PathVariable type: String, @PathVariable file: String): Any {
         val coverType = CoverType.valueOf(type.toUpperCase())
         return RedirectView(coverService.getCoverURL(coverType, file).toString())
