@@ -1,5 +1,7 @@
 package com.heerkirov.animation.model.data
 
+import java.time.ZoneId
+
 data class User(val id: Int,
                 val username: String,
                 val isStaff: Boolean,
@@ -7,6 +9,5 @@ data class User(val id: Int,
 
 data class UserSetting(val animationUpdateNotice: Boolean = false,
                        val nightTimeTable: Boolean = false,
-                       val autoUpdateStatistics: Boolean = true)
-//可选的新选项：
-//TODO + 时区
+                       val autoUpdateStatistics: Boolean = true,
+                       val timezone: String = ZoneId.systemDefault().toString())

@@ -8,6 +8,7 @@ import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.batchInsert
 import me.liuwj.ktorm.dsl.insertAndGenerateKey
 import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.entity.sortedBy
 
 class TransformStaff(private val userLoader: UserLoader,
                      private val v1Database: Database,
@@ -17,7 +18,7 @@ class TransformStaff(private val userLoader: UserLoader,
     fun transform(animationIdMap: Map<Long, Int>) {
         val staffIdMap = HashMap<Long, Int>()
 
-        for (v1Staff in v1Database.sequenceOf(V1Staffs)) {
+        for (v1Staff in v1Database.sequenceOf(V1Staffs).sortedBy { it.id }) {
             val id = database.insertAndGenerateKey(Staffs) {
                 it.name to v1Staff.name
                 it.originName to v1Staff.originName

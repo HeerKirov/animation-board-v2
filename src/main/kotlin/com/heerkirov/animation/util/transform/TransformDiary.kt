@@ -9,6 +9,7 @@ import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.insert
 import me.liuwj.ktorm.dsl.insertAndGenerateKey
 import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.entity.sortedBy
 
 class TransformDiary(private val userLoader: UserLoader,
                      private val v1Database: Database,
@@ -17,7 +18,7 @@ class TransformDiary(private val userLoader: UserLoader,
 
     fun transform(animationIdMap: Map<Long, Int>) {
         var num = 0
-        for (v1Diary in v1Database.sequenceOf(V1Diaries)) {
+        for (v1Diary in v1Database.sequenceOf(V1Diaries).sortedBy { it.id }) {
             if(v1Diary.status != "GIVE_UP") {
                 val id = database.insertAndGenerateKey(Records) {
                     it.ownerId to userLoader[v1Diary.ownerId].id

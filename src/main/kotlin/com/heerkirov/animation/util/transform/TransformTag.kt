@@ -7,6 +7,7 @@ import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.batchInsert
 import me.liuwj.ktorm.dsl.insertAndGenerateKey
 import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.entity.sortedBy
 import me.liuwj.ktorm.entity.toList
 
 class TransformTag(private val userLoader: UserLoader,
@@ -17,7 +18,7 @@ class TransformTag(private val userLoader: UserLoader,
     fun transform(animationIdMap: Map<Long, Int>) {
         val tagIdMap = HashMap<Long, Int>()
 
-        for (v1Tag in v1Database.sequenceOf(V1Tags)) {
+        for (v1Tag in v1Database.sequenceOf(V1Tags).sortedBy { it.id }) {
             val id = database.insertAndGenerateKey(Tags) {
                 it.name to v1Tag.name
                 it.introduction to v1Tag.introduction

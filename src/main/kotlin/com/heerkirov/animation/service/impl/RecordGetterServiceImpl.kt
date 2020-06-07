@@ -23,6 +23,7 @@ import me.liuwj.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.time.Duration
+import java.time.ZoneId
 import java.time.temporal.ChronoField
 
 @Service
@@ -45,6 +46,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
 
     override fun diary(filter: DiaryFilter, user: User): DiaryResult {
         val nightTimeTable = user.setting.nightTimeTable
+        val zone = ZoneId.of(user.setting.timezone)
         val (direction, order) = filter.order.firstOrNull() ?: throw BadRequestException(ErrCode.PARAM_REQUIRED, "Query 'order' is required.")
 
         val items = database.from(Records)
@@ -78,7 +80,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                         recordProcessor.getStatus(it[Records.progressCount]!!, it[Animations.totalEpisodes]!!, it[RecordProgresses.watchedEpisodes]),
                         (it[RecordProgresses.startTime] ?: it[Records.createTime]!!).toDateTimeString()
                 ) }
-                .sortDiary(direction, order, nightTimeTable)
+                .sortDiary(direction, order, nightTimeTable, zone)
                 .toList()
 
         return DiaryResult(items, nightTimeTable)
@@ -86,6 +88,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
 
     override fun timetable(user: User): TimetableResult {
         val nightTimeTable = user.setting.nightTimeTable
+        val zone = ZoneId.of(user.setting.timezone)
 
         val items = database.from(Animations)
                 .innerJoin(Records, (Animations.id eq Records.animationId) and (Records.ownerId eq user.id))
@@ -100,11 +103,11 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                 ) }
                 .sortedBy { it.nextPublishTime }
                 .groupBy {
-                    if(nightTimeTable) {
-                        it.nextPublishTime.parseDateTime().minusHours(nightTimeTableHourOffset)
-                    }else{
-                        it.nextPublishTime.parseDateTime()
-                    }.dayOfWeek.value
+                    it.nextPublishTime
+                            .parseDateTime()
+                            .asZonedTime(zone)
+                            .runIf(nightTimeTable) { t -> t.minusHours(nightTimeTableHourOffset) }
+                            .dayOfWeek.value
                 }
 
         return TimetableResult(items, nightTimeTable)
@@ -274,15 +277,19 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                 ) }
     }
 
-    private fun Sequence<DiaryItem>.sortDiary(direction: Int, order: String, nightTimeTable: Boolean): Sequence<DiaryItem> {
+    private fun Sequence<DiaryItem>.sortDiary(direction: Int, order: String, nightTimeTable: Boolean, timezone: ZoneId): Sequence<DiaryItem> {
         val now = DateTimeUtil.now()
         return when(order) {
             "weekly_calendar" -> {
+                val zonedNow = now.asZonedTime(timezone)
                 this.map {
                     //将next publish plan拆解成几项参数: 完整时间, 周数差，周内时间
                     if(it.nextPublishPlan != null) {
-                        val datetime = it.nextPublishPlan.parseDateTime().runIf(nightTimeTable) { t -> t.minusHours(nightTimeTableHourOffset) }
-                        val weekDuration = weekDuration(now, datetime)
+                        val datetime = it.nextPublishPlan
+                                .parseDateTime()
+                                .asZonedTime(timezone)
+                                .runIf(nightTimeTable) { t -> t.minusHours(nightTimeTableHourOffset) }
+                        val weekDuration = weekDuration(zonedNow, datetime)
                         val weekday = datetime.dayOfWeek.value
                         val minute = datetime.getLong(ChronoField.MINUTE_OF_DAY)
                         val timeInWeek = weekday * 60 * 24 + minute

@@ -9,6 +9,7 @@ data class StatusRes(@JsonProperty("is_login") val isLogin: Boolean,
 
 data class SettingRes(@JsonProperty("animation_update_notice") val animationUpdateNotice: Boolean,
                       @JsonProperty("night_time_table") val nightTimeTable: Boolean,
-                      @JsonProperty("auto_update_statistics") val autoUpdateStatistics: Boolean)
+                      @JsonProperty("auto_update_statistics") val autoUpdateStatistics: Boolean,
+                      @JsonProperty("timezone") val timezone: String)
 
-fun UserSetting.toRes() = SettingRes(animationUpdateNotice, nightTimeTable, autoUpdateStatistics)
+fun UserSetting.toRes() = SettingRes(animationUpdateNotice, nightTimeTable, autoUpdateStatistics, timezone)

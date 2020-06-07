@@ -271,8 +271,8 @@ class AnimationServiceImpl(@Autowired private val database: Database,
         val animation = database.sequenceOf(Animations).find { it.id eq id } ?: throw NotFoundException("Animation not found.")
 
         recordProcessor.deleteRecords(id)
-        //TODO comment相关业务完成后，需要联动删除comments
         if(animation.relationsTopology.isNotEmpty()) relationProcessor.removeAnimationInTopology(id, animation.relationsTopology)
+        database.delete(Comments) { it.animationId eq id }
         database.delete(AnimationTagRelations) { it.animationId eq id }
         database.delete(AnimationStaffRelations) { it.animationId eq id }
         database.delete(Animations) { it.id eq id }

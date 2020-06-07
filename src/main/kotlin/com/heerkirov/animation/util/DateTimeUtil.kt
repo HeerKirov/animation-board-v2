@@ -95,3 +95,13 @@ fun weekDuration(a: LocalDateTime, b: LocalDateTime): Int {
     val firstDayOfB = if(b.dayOfWeek.ordinal > 0) b.minusDays(b.dayOfWeek.ordinal.toLong()) else b
     return (Duration.between(firstDayOfA, firstDayOfB).toDays() / 7).toInt()
 }
+
+/**
+ * 计算a和b之间的周数差。
+ * 例如，当a在本周，b在下周时，返回1。
+ */
+fun weekDuration(a: ZonedDateTime, b: ZonedDateTime): Int {
+    val firstDayOfA = if(a.dayOfWeek.ordinal > 0) a.minusDays(a.dayOfWeek.ordinal.toLong()) else a
+    val firstDayOfB = if(b.dayOfWeek.ordinal > 0) b.minusDays(b.dayOfWeek.ordinal.toLong()) else b
+    return (Duration.between(firstDayOfA, firstDayOfB).toDays() / 7).toInt()
+}

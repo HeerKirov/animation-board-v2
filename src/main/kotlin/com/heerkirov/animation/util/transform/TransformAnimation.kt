@@ -11,6 +11,7 @@ import me.liuwj.ktorm.dsl.batchUpdate
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.dsl.insertAndGenerateKey
 import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.entity.sortedBy
 import me.liuwj.ktorm.entity.toList
 
 class TransformAnimation(private val userLoader: UserLoader,
@@ -21,7 +22,7 @@ class TransformAnimation(private val userLoader: UserLoader,
     fun transform(): Map<Long, Int> {
         val idMap = HashMap<Long, Int>()
 
-        val v1Animations = v1Database.sequenceOf(V1Animations).toList()
+        val v1Animations = v1Database.sequenceOf(V1Animations).sortedBy { it.id }.toList()
         for (v1Animation in v1Animations) {
             val id = database.insertAndGenerateKey(Animations) {
                 it.title to v1Animation.title

@@ -5,6 +5,7 @@ import com.heerkirov.animation.util.logger
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.batchInsert
 import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.entity.sortedBy
 import me.liuwj.ktorm.entity.toList
 
 class TransformComment(private val userLoader: UserLoader,
@@ -13,7 +14,7 @@ class TransformComment(private val userLoader: UserLoader,
     private val log = logger<TransformComment>()
 
     fun transform(animationIdMap: Map<Long, Int>) {
-        val v1Comments = v1Database.sequenceOf(V1Comments).toList()
+        val v1Comments = v1Database.sequenceOf(V1Comments).sortedBy { it.id }.toList()
         database.batchInsert(Comments) {
             for (v1Comment in v1Comments) {
                 item {

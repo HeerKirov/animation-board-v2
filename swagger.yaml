@@ -63,6 +63,8 @@ tags:
     description: "用户评价"
   - name: "User"
     description: "用户相关服务"
+  - name: "Util"
+    description: "工具和杂项"
 
 paths:
   /api/database/animations:
@@ -1011,6 +1013,28 @@ paths:
               schema:
                 type: integer
                 description: 实际成功标记的消息数量
+  /api/util/timezones:
+    get:
+      summary: 获取可用时区
+      description: 用户设置中的时区必须使用系统指定的时区选项。时区选项从此API获取。这是一个常量API，内容不会更改。
+      tags: [Util]
+      parameters:
+        - name: usual
+          in: query
+          description: |
+            只显示常用时区。
+            全部时区的列表过于冗长，不容易找到常用的时区。开启这个参数，将只返回少数常用的时区。
+          schema: {type: boolean}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: 时区名称
 components:
   parameters:
     Limit:
@@ -1798,18 +1822,17 @@ components:
           oneOf:
             - $ref: '#/components/schemas/MessageContentPublish'
     MessageContentPublish:
-      type: object
-      description: 动画更新推送。(old, new]区间是新更新的集数。
-      properties:
-        animation_id:
-          type: integer
-          description: animation id
-        old_episodes:
-          type: integer
-          description: 更新前的episodes
-        new_episodes:
-          type: integer
-          description: 更新后的episodes
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartRes'
+        - type: object
+          description: 动画更新推送。(old, new]区间是新更新的集数。
+          properties:
+            old_episodes:
+              type: integer
+              description: 更新前的episodes
+            new_episodes:
+              type: integer
+              description: 更新后的episodes
     ListResult:
       type: object
       properties:
@@ -1839,8 +1862,8 @@ components:
           type: boolean
           description: 后台自动更新统计项目
         timezone:
-          type: integer
-          description: 用户的主要时区。表示单位是分钟，换算成时区
+          type: string
+          description: 用户的主要时区。时区应当填写从时区API获得的时区名称
     OriginalWorkType:
       type: string
       nullable: true
