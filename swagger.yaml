@@ -390,6 +390,531 @@ paths:
       responses:
         204:
           description: No Content
+  /api/personal/records/diary:
+    get:
+      summary: 查看日记本
+      description: 用户加入到日记本中的记录。日记本起到标记追番和补番的作用。
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - name: filter
+          in: query
+          description: |
+            过滤。日记本按既定的模式进行内容过滤。
+            * active: 活跃中。动画有存货，或者还在更新中。
+            * watchable: 有存货。动画还有没看的集数。
+            * updating: 更新中。动画还在更新中，存在更新计划。
+            * completed: 已完结。动画已经完结。
+            * shelve: 搁置中。动画还没有完结，已经看完所有发布的集数，但没有后续更新计划了。
+
+            不指定任何项目，则不进行过滤。
+          schema:
+            type: string
+            enum: [active, watchable, updating, completed, shelve]
+        - name: order
+          in: query
+          description: |
+            排序。日记本采用单项、复杂的排序模式。可以使用减号(`-`)来部分降序。
+            * weekly_calendar: 周历排序。以追番周历为主要内容的排序。
+              在两周以内更新的番剧会按周一到周日的顺序排序；两周之外更新的番剧其次；补番、已看完、搁置的番剧再次。
+            * update_soon: 即将更新排序。以追番即将更新为主要内容的排序。
+            有更新计划的番剧会按距现在更新时间的长短顺序排序；补番、已看完、搁置的番剧其次。
+            * subscription_time: 订阅顺序排序。按照进度创建或记录创建的顺序排序。
+
+            默认按周历排序。
+          schema:
+            type: string
+            enum: [weekly_calendar, update_soon, subscription_time]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DiaryResult'}
+  /api/personal/records/timetable:
+    get:
+      summary: 查看放送时间表
+      description: 用户的观看记录中还在更新的动画，生成它们从周一到周日的、每天的放送时间表。
+      tags: [Record]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TimetableResult'}
+  /api/personal/records/activity:
+    get:
+      summary: 查看观看动态
+      description: 用户最近观看了的动画动态。按活跃时间降序排序。
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/ActivityRes'}
+  /api/personal/records/history:
+    get:
+      summary: 查看观看历史
+      description: 用户观看动画的历史记录。以进度为单位，过滤已完成的进度，按完成时间降序排序。
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/HistoryRes'}
+  /api/personal/records/find:
+    get:
+      summary: 发现动画
+      description: 找到没看过的动画，或者没有加入日记本而被忘记的动画
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+        - name: filter
+          in: query
+          required: true
+          description: |
+            查找哪种动画。
+            * not_seen: 没有创建观看记录的动画。也就是没有看过的动画。
+            * recorded: 创建观看记录，没有加入日记本，没有进度的动画。
+            * incomplete: 创建观看记录，没有加入日记本，存在没有完成的进度的动画。
+          schema:
+            type: string
+            enum: [not_seen, recorded, incomplete]
+        - name: order
+          in: query
+          description: |
+            排序。使用逗号(`,`)组合排序，使用减号(`-`)降序排序
+            * publish_time: 动画放送时间
+            * create_time: 动画条目创建时间
+            * update_time: 动画条目更新时间
+          schema:
+            type: string
+            enum: [publish_time, create_time, update_time]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/FindRes'}
+  /api/personal/records:
+    post:
+      summary: 创建新观看记录
+      tags: [Record]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RecordCreateForm'}
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RecordDetailRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `ALREADY_EXISTS` - 此动画的record已经存在
+                      * `NOT_EXISTS` - 此动画不存在
+  /api/personal/records/{id}:
+    get:
+      summary: 查看观看记录概况
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RecordDetailRes'}
+    patch:
+      summary: 更新观看记录的基本信息
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RecordPartialForm'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RecordDetailRes'}
+    delete:
+      summary: 删除观看记录
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        204:
+          description: No Content
+  /api/personal/records/{id}/next-episodes:
+    post:
+      summary: 更新观看记录至下一话
+      description: |
+        在观看进度上，将下一话标记为已观看。
+        如果不存在进度，那么自动创建一条记录。
+        如果已经不存在可观看的下一话，那么会返回一个错误代码。
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NextRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `INVALID_OPERATION` - 不存在可观看的下一话
+  /api/personal/records/{id}/progress:
+    get:
+      summary: 查看观看记录的进度列表
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/ProgressRes'}
+    post:
+      summary: 为观看记录创建一条新进度
+      description: 创建一条全新的进度。按照约束，只有当前没有进度，或当前最新的进度已完成时，才能创建新的进度。
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProgressCreateForm'}
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProgressRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `INVALID_OPERATION` - 当前存在未完成的进度，不允许创建新进度
+    put:
+      summary: 编辑观看记录最新的进度
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProgressUpdateForm'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProgressRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `INVALID_OPERATION` - 此记录还没有进度，需要先创建进度才能编辑
+  /api/personal/records/{id}/progress/{ordinal}:
+    delete:
+      summary: 删除观看记录中的一条指定进度
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+        - name: ordinal
+          in: path
+          required: true
+          description: 进度序号
+          schema: {type: integer}
+      responses:
+        204:
+          description: No Content
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `INVALID_OPERATION` - 指定的进度不存在
+  /api/personal/records/{id}/scatter:
+    get:
+      summary: 查看观看记录的离散图
+      description: 以统计图的结构，展示此动画的每一集，分别观看了多少次，在进度中的观看次数和离散的观看次数分别是多少。
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScatterItemRes'
+  /api/personal/records/{id}/scatter/watch:
+    post:
+      summary: 添加一条离散观看记录
+      description: |
+        添加一条不在进度中的观看记录。这条记录可以是已经发布的任意集数，并且不限次数添加。
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ScatterForm'}
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `INVALID_OPERATION` - 选取的集数超出了total_episodes或published_episodes，不能添加此记录
+  /api/personal/records/{id}/scatter/group:
+    post:
+      summary: 将离散观看记录沉降到进度
+      description: |
+        较多的离散记录连续之后，可以将它们转换为观看进度的一部分。
+        * 如果现存未完成的进度，那么从这条未完成进度即将观看的下一集开始；如果不存在进度或进度已完成，那么会从第1集开始尝试创建一条新进度。
+        * 沉降从目标集数开始，在离散观看记录中搜索与上次观看时间最接近的一项，并将其加入到进度。
+        * 沉降的记录必须是连续的，也就是沉降会在找不到下一集的离散记录时结束。此外沉降不会跨进度，因此也会在完成最后一集后结束。
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScatterGroupRes'
+  /api/personal/comments/activity:
+    get:
+      summary: 查看评论动态
+      description: 用户最近更新了的评论。按更新时间降序排序。
+      tags: [Comment]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+        - name: has_score
+          in: query
+          description: 按是否有评分过滤
+          schema: {type: boolean}
+        - name: has_article
+          in: query
+          description: 按是否有评论内容过滤
+          schema: {type: boolean}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/CommentRes'}
+  /api/personal/comments/rank:
+    get:
+      summary: 查看评分榜
+      description: 查看所有评分过的动画的评分表。按评分降序排序。
+      tags: [Comment]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+        - name: min_score
+          in: query
+          description: 过滤不小于此分数的项目
+          schema: {type: integer, minimum: 1, maximum: 10}
+        - name: max_score
+          in: query
+          description: 过滤不大于此分数的项目
+          schema: {type: integer, minimum: 1, maximum: 10}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/CommentRankRes'}
+  /api/personal/comments/find:
+    get:
+      summary: 发现未评分的动画
+      description: 发现那些已经看过，但是没有评分的动画
+      tags: [Comment]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+        - name: order
+          in: query
+          description: |
+            排序。使用逗号(`,`)组合排序，使用减号(`-`)降序排序
+            * finish_time: 动画看完时间
+            * publish_time: 动画放送时间
+            * create_time: 动画条目创建时间
+          schema:
+            type: string
+            enum: [finish_time, publish_time, create_time]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ListResult'
+                  - type: object
+                    properties:
+                      result:
+                        type: array
+                        items: {$ref: '#/components/schemas/CommentFindRes'}
+  /api/personal/comments:
+    post:
+      summary: 创建新评价
+      tags: [Comment]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CommentCreateForm'}
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CommentRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `ALREADY_EXISTS` - 此动画的comment已经存在
+                      * `NOT_EXISTS` - 此动画不存在
+  /api/personal/comments/{id}:
+    get:
+      summary: 查看评价详情
+      tags: [Comment]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CommentRes'}
+    patch:
+      summary: 更新评价内容
+      tags: [Comment]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CommentUpdateForm'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CommentRes'}
+    delete:
+      summary: 删除评价
+      tags: [Comment]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        204:
+          description: No Content
   /api/user/status:
     get:
       summary: 检验用户登录状态
@@ -649,6 +1174,119 @@ components:
           description: staff是否为组织。否表示个人
         occupation:
           $ref: '#/components/schemas/StaffOccupation'
+    RecordCreateForm:
+      type: object
+      required: [animation_id, create_type]
+      properties:
+        animation_id:
+          type: integer
+          description: animation id
+        create_type:
+          type: string
+          description: |
+            以什么方式创建新观看记录:
+            * SUBSCRIBE: 订阅模式。用户从头开始订阅此动画，将其加入日记本，并创建首条观看进度。
+            * SUPLEMENT: 补充模式。用户之前已经看过，因此补充一些观看记录。此模式必须填写参数`progress`。补充模式不会生成观看时间记录。
+            * RECORD: 仅加入记录。创建此动画的记录，但不加入日记本，不创建进度，仅仅起到标记作用。
+          enum: [SUBSCRIBE, SUPPLEMENT, RECORD]
+        progress:
+          type: array
+          description: |
+            补充模式下，需要补充的进度。每一个项表示一条从头到尾的观看进度。
+            * 至少要有一条进度，可以有多条进度。
+            * 进度的时间顺序是严格的，后一条记录必须严格晚于前一条记录，finish_time不能早于start_time。
+            * `finish_time`和`watched_episodes`必须提供其一。finish_time提供时表示此进度已完成，忽略另一个参数，否则表示未完成。
+            * 最后一条进度可以未完成。除此之外的进度都必须是已完成的。
+            * 显然，由于上述条件的约束，未完结的动画只能创建一条进度。
+          items:
+            type: object
+            properties:
+              start_time:
+                type: string
+                format: yyyy-MM-ddThh:mm:ssZ
+                description: 进度的开始时间
+              finish_time:
+                type: string
+                format: yyyy-MM-ddThh:mm:ssZ
+                description: 进度的完成时间
+              watched_episodes:
+                type: integer
+                minimum: 0
+                description: 进度已经看的集数
+    RecordPartialForm:
+      type: object
+      properties:
+        seen_original:
+          type: boolean
+          description: 已经看过原作
+        in_diary:
+          type: boolean
+          description: 此记录在日记本中
+    ProgressCreateForm:
+      type: object
+      properties:
+        supplement:
+          type: boolean
+          description: |
+            选择false或不填，以普通模式创建新进度。
+            选择true，则以补充模式创建进度。与Record创建的补充模式类似。
+            补充模式下，需要使用下面三个参数。
+            * 进度的时间顺序是严格的，finish_time不能早于start_time。
+            * `finish_time`和`watched_episodes`必须提供其一。finish_time提供时表示此进度已完成，忽略另一个参数，否则表示未完成。
+        start_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 进度的开始时间
+        finish_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 进度的完成时间
+        watched_episodes:
+          type: integer
+          minimum: 0
+          description: 进度已经看的集数
+    ProgressUpdateForm:
+      type: object
+      required: [watched_episodes]
+      properties:
+        watched_episodes:
+          type: integer
+          minimum: 0
+          description: |
+            已观看的集数。此数值范围不会超出`published_episodes`的上限。
+            减小此数值会清除已有的观看时间记录，增大此数值会正常创建观看时间记录。
+    ScatterForm:
+      type: object
+      required: [episode]
+      properties:
+        episode:
+          type: integer
+          minimum: 1
+          description: 离散观看的集数。这会在对应集数的离散观看记录上+1。
+    CommentCreateForm:
+      allOf:
+        - type: object
+          required: [animation_id, score, article]
+          properties:
+            animation_id:
+              type: integer
+              description: animation id
+        - $ref: '#/components/schemas/CommentUpdateForm'
+    CommentUpdateForm:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: 评分
+        article_title:
+          type: string
+          maxLength: 128
+          description: 评论标题
+        article:
+          type: string
+          description: 评论内容
     MarkAsReadForm:
       type: object
       required: [message_ids]
@@ -795,6 +1433,19 @@ components:
           format: yyyy-MM-ddThh:mm:ssZ
           description: 记录更新时间
           nullable: false
+    AnimationPartRes:
+      type: object
+      properties:
+        animation_id:
+          type: integer
+          description: animation id
+        title:
+          type: string
+          description: 动画标题
+        cover:
+          type: string
+          nullable: true
+          description: 动画封面文件名
     TagRes:
       type: object
       properties:
@@ -862,6 +1513,265 @@ components:
           $ref: '#/components/schemas/StaffOccupation'
         staff_type:
           $ref: '#/components/schemas/StaffType'
+    DiaryResult:
+      type: object
+      properties:
+        result:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/AnimationPartRes'
+              - $ref: '#/components/schemas/RecordEpisodesPart'
+              - type: object
+                properties:
+                  next_publish_plan:
+                    type: string
+                    format: yyyy-MM-ddThh:mm:ssZ
+                    nullable: true
+                    description: 此动画下一次更新的时间点
+                  status:
+                    $ref: '#/components/schemas/RecordStatus'
+                  subscription_time:
+                    type: string
+                    format: yyyy-MM-ddThh:mm:ssZ
+                    description: 动画的订阅时间。实际是进度创建时间，或记录创建时间
+        night_time_table:
+          type: boolean
+          description: 用户的`night_time_table`选项。附加是为了减少查询。
+    TimetableResult:
+      type: object
+      properties:
+        result:
+          type: object
+          description: 每周时间表。key表示周数(MON~SUN = 1~7)，value表示这一天更新的动画列表
+          additionalProperties:
+            allOf:
+              - $ref: '#/components/schemas/AnimationPartRes'
+              - type: object
+                properties:
+                  next_publish_time:
+                    type: string
+                    format: yyyy-MM-ddThh:mm:ssZ
+                    description: 该动画下一次发布的时间
+                  next_publish_episodes:
+                    type: integer
+                    description: 该动画下一次要发布的集数
+        night_time_table:
+          type: boolean
+          description: 用户的`night_time_table`选项。附加是为了减少查询。
+    ActivityRes:
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartRes'
+        - type: object
+          properties:
+            active_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 上次活动时间
+            active_event:
+              type: object
+              description: 上次活动事件
+              properties:
+                type:
+                  $ref: '#/components/schemas/ActiveEventType'
+                episode:
+                  type: array
+                  nullable: true
+                  items:
+                    type: integer
+                  description: 如果上次活动是观看活动，那么给出上次活动的观看的集数
+            progress:
+              type: number
+              minimum: 0
+              description: 综合观看进度。整数部分表示已完成的进度数量，小数部分表示当前进度的完成百分比
+    HistoryRes:
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartRes'
+        - type: object
+          properties:
+            start_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 开始时间
+            finish_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 结束时间
+            ordinal:
+              type: integer
+              minimum: 1
+              description: 进度的序号
+    FindRes:
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartRes'
+        - $ref: '#/components/schemas/RecordEpisodesPart'
+        - type: object
+          properties:
+            watched_episodes:
+              type: integer
+              nullable: true
+              description: 已观看集数
+            progress:
+              type: number
+              minimum: 0
+              nullable: true
+              description: 综合观看进度。整数部分表示已完成的进度数量，小数部分表示当前进度的完成百分比
+    RecordDetailRes:
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartRes'
+        - $ref: '#/components/schemas/RecordEpisodesPart'
+        - type: object
+          properties:
+            seen_original:
+              type: boolean
+              description: 看过原作
+            status:
+              $ref: '#/components/schemas/RecordStatus'
+            in_diary:
+              type: boolean
+              description: 已加入日记本
+            progress_count:
+              type: integer
+              minimum: 0
+              description: 总的进度数量
+            create_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 创建时间
+            update_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 更新时间
+    ProgressRes:
+      type: object
+      properties:
+        ordinal:
+          type: integer
+          minimum: 1
+          description: 进度的序号
+        watched_episodes:
+          type: integer
+          description: 已观看集数
+        start_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          nullable: true
+          description: 进度开始时间
+        finish_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          nullable: true
+          description: 进度完成时间
+    NextRes:
+      type: object
+      properties:
+        watched_episodes:
+          type: integer
+          description: 已观看集数
+    ScatterItemRes:
+      type: object
+      properties:
+        episode:
+          type: integer
+          minimum: 1
+          description: 集数
+        progress_times:
+          type: integer
+          minimum: 0
+          description: 该集数在进度中的观看次数
+        scatter_times:
+          type: integer
+          minimum: 0
+          description: 该集数在离散记录中的观看次数
+    ScatterGroupRes:
+      type: object
+      properties:
+        group_to:
+          type: string
+          description: |
+            沉降的目标。
+            * CURRENT: 沉降到现有的进度。
+            * NEW: 沉降到一条新建的进度。
+            * NONE: 没有可沉降的离散记录。
+          enum: [CURRENT, NEW, NONE]
+        progress_ordinal:
+          type: integer
+          minimum: 1
+          description: 沉降的目标进度的序号
+        watched_episodes:
+          type: integer
+          minimum: 1
+          description: 沉降之后，此进度的已观看集数
+        append_episodes:
+          type: integer
+          minimum: 1
+          description: 沉降所新增的已观看集数
+    RecordEpisodesPart:
+      type: object
+      properties:
+        total_episodes:
+          type: integer
+          description: 总集数
+        published_episodes:
+          type: integer
+          description: 已发布集数
+        watched_episodes:
+          type: integer
+          description: 已观看集数
+    CommentRankRes:
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartRes'
+        - type: object
+          properties:
+            score:
+              type: integer
+              minimum: 1
+              maximum: 10
+              description: 评分
+    CommentFindRes:
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartRes'
+        - type: object
+          properties:
+            finish_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 记录中的看完时间
+            publish_time:
+              type: string
+              format: yyyy-MM
+              description: 动画放送时间
+            create_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 动画条目创建时间
+    CommentRes:
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartRes'
+        - type: object
+          properties:
+            score:
+              type: integer
+              nullable: true
+              minimum: 1
+              maximum: 10
+              description: 评分
+            article_title:
+              type: string
+              nullable: true
+              description: 评论标题
+            article:
+              type: string
+              nullable: true
+              description: 评论内容
+            create_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 创建时间
+            update_time:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 更新时间
     StatusRes:
       type: object
       properties:

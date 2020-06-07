@@ -130,8 +130,8 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                         it[Animations.id]!!,
                         it[Animations.title]!!,
                         it[Animations.cover],
-                        it[Records.lastActiveTime]?.toDateTimeString(),
-                        it[Records.lastActiveEvent],
+                        it[Records.lastActiveTime]!!.toDateTimeString(),
+                        it[Records.lastActiveEvent]!!,
                         recordProcessor.calculateProgress(it[Records.progressCount]!!, it[Animations.totalEpisodes]!!, it[RecordProgresses.watchedEpisodes])
                 ) }
     }
