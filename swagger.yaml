@@ -1497,26 +1497,39 @@ components:
               format: yyyy-MM-ddThh:mm:ssZ
               description: 更新时间
     StaffRes:
-      allOf:
-        - $ref: '#/components/schemas/StaffRelationRes'
-        - type: object
-          properties:
-            origin_name:
-              type: string
-              nullable: true
-              description: 相关人员原语言名称
-            remark:
-              type: string
-              nullable: true
-              description: 相关人员的别称
-            create_time:
-              type: string
-              format: yyyy-MM-ddThh:mm:ssZ
-              description: 创建时间
-            update_time:
-              type: string
-              format: yyyy-MM-ddThh:mm:ssZ
-              description: 更新时间
+      type: object
+      properties:
+        id:
+          type: integer
+          description: staff id
+        name:
+          type: string
+          description: staff名称
+        cover:
+          type: string
+          nullable: true
+          description: staff头像文件名
+        is_organization:
+          type: boolean
+          description: staff是否为组织。否表示个人
+        occupation:
+          $ref: '#/components/schemas/StaffOccupation'
+        origin_name:
+          type: string
+          nullable: true
+          description: 相关人员原语言名称
+        remark:
+          type: string
+          nullable: true
+          description: 相关人员的别称
+        create_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 创建时间
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 更新时间
     StaffRelationRes:
       type: object
       properties:

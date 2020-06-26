@@ -7,7 +7,7 @@ import me.liuwj.ktorm.database.Database
 /**
  * 从animation board v1的数据库迁移数据。
  */
-fun main(vararg args: String) {
+fun main() {
     val properties = loadProperties("application.properties")
 
     val v1Database = Database.connect(
@@ -23,7 +23,6 @@ fun main(vararg args: String) {
             user = properties.getProperty("spring.datasource.username"),
             password = properties.getProperty("spring.datasource.password")
     )
-
 
     transformV1ToV2(v1Database, v2Database)
 }

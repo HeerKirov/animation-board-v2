@@ -146,7 +146,6 @@ CREATE TABLE statistics(
     key VARCHAR(256),                               -- 统计id
     content JSONB NOT NULL,                         -- 统计内容
 
-    create_time TIMESTAMP NOT NULL,                 -- 统计创建时间
     update_time TIMESTAMP NOT NULL                  -- 上次更新时间，可告知用户何时更新的统计数据
 );
 CREATE INDEX statistics__owner_id__index ON statistics(owner_id);
