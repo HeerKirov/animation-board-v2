@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.io.InputStream
 import java.net.URL
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.NoSuchElementException
 import kotlin.random.Random
 
@@ -37,6 +38,8 @@ class CoverServiceImpl(@Autowired private val oss: OSS,
     private val validContentType = arrayOf("image/jpeg", "image/png")
 
     private val validExtension = arrayOf("png", "jpg", "jpeg")
+
+    private val urlCache = ConcurrentHashMap<String, URLCache>()
 
     @Transactional
     override fun uploadCover(type: CoverType, id: Int, srcFile: MultipartFile, inputStream: InputStream): String {
@@ -113,7 +116,15 @@ class CoverServiceImpl(@Autowired private val oss: OSS,
     }
 
     override fun getCoverURL(type: CoverType, filename: String): URL {
-        return oss.generatePresignedUrl(bucket, url(type, filename), Date(Date().time + presignedDuration)) ?: throw NotFoundException("Not found.")
+        val key = url(type, filename)
+        return urlCache.compute(key) { _, cache ->
+            val now = Date().time
+            if(cache == null || cache.expireTime <= now) {
+                URLCache(oss.generatePresignedUrl(bucket, key, Date(now + presignedDuration)), now + presignedDuration)
+            }else{
+                cache
+            }
+        }?.url ?: throw NotFoundException("Not found.")
     }
 
     private fun url(type: CoverType, filename: String) = "cover/${type.name.toLowerCase()}/$filename"
@@ -137,4 +148,6 @@ class CoverServiceImpl(@Autowired private val oss: OSS,
             filename
         }
     }
+
+    private data class URLCache(val url: URL, val expireTime: Long)
 }
