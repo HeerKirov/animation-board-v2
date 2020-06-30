@@ -1896,7 +1896,7 @@ components:
       type: string
       nullable: true
       description: 分级(暴力)
-      enum: [NO, NORMAL, MILD, SEVERE, RESTRICTED]
+      enum: [NO, A, B, C, D]
     RelationType:
       type: string
       description: 动画关联关系类型

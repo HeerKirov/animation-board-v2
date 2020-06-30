@@ -104,11 +104,11 @@ class TransformAnimation(private val userLoader: UserLoader,
     private fun String.convertViolenceLimitLevel(): ViolenceLimitLevel {
         return when(this) {
             "ALL" -> ViolenceLimitLevel.NO
-            "R12" -> ViolenceLimitLevel.NORMAL
-            "R15" -> ViolenceLimitLevel.MILD
-            "R17" -> ViolenceLimitLevel.SEVERE
-            "R18" -> ViolenceLimitLevel.SEVERE
-            "R18G" -> ViolenceLimitLevel.RESTRICTED
+            "R12" -> ViolenceLimitLevel.A
+            "R15" -> ViolenceLimitLevel.B
+            "R17" -> ViolenceLimitLevel.C
+            "R18" -> ViolenceLimitLevel.C
+            "R18G" -> ViolenceLimitLevel.D
             else -> throw NoSuchElementException("No such limit level '$this'.")
         }
     }

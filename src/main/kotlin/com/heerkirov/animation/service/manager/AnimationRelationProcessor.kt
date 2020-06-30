@@ -110,7 +110,7 @@ class AnimationRelationProcessor(@Autowired private val database: Database) {
         var num = 0
         database.batchUpdate(Animations) {
             for (element in elements) {
-                val topology = graph[element]
+                val topology = graph[element].map { (k, v) -> Pair(k, v.map { it.id }) }.toMap()
                 if(topology.isNotEmpty()) {
                     item {
                         where { it.id eq element.id }
