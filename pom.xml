@@ -19,7 +19,7 @@
 		<kotlin.version>1.3.72</kotlin.version>
 		<ktorm.version>2.7.2</ktorm.version>
 		<okhttp3.version>4.6.0</okhttp3.version>
-		<oss.version>3.9.1</oss.version>
+		<oss.version>3.10.2</oss.version>
 		<im4java.version>1.4.0</im4java.version>
 	</properties>
 
@@ -86,6 +86,12 @@
 			<groupId>org.im4java</groupId>
 			<artifactId>im4java</artifactId>
 			<version>${im4java.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.3.1</version>
 		</dependency>
 
 

@@ -18,7 +18,7 @@ class ValidationResolver : HandlerMethodArgumentResolver {
     }
 
     override fun resolveArgument(p: MethodParameter, container: ModelAndViewContainer?, request: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
-        if(request.getHeader("content-type") != "application/json") throw BadRequestException(ErrCode.INVALID_CONTENT_TYPE, "Content-type must be application/json.")
+        if(request.getHeader("content-type")?.contains("application/json") != true) throw BadRequestException(ErrCode.INVALID_CONTENT_TYPE, "Content-type must be application/json.")
 
         val httpServletRequest = request.getNativeRequest(HttpServletRequest::class.java)!!
         val requestBody = InputStreamReader(httpServletRequest.inputStream).use { isr ->
