@@ -23,7 +23,7 @@ object V1Animations : BaseTable<V1Animation>("api_animation") {
     val introduction by varchar("introduction")
     val keyword by varchar("keyword")
     val limitLevel by varchar("limit_level")
-    val relations by jsonString("relations")
+    val relations by jsonString("original_relations")
     val createTime by datetime("create_time")
     val updateTime by datetime("update_time")
     val creator by varchar("creator")
