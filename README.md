@@ -21,5 +21,6 @@ vim application.properties     # 编辑配置文件
 ./server-stop.sh               # 关闭服务器
 
 ./transform-database.sh        # 将v1版本的数据库迁移到此项目
+./transform-oss.sh             # 将v1版本的OSS文件迁移到此项目
 
 ```

@@ -165,8 +165,8 @@ class AnimationServiceImpl(@Autowired private val database: Database,
 
         val id = database.insertAndGenerateKey(Animations) {
             it.title to form.title
-            it.originTitle to form.originTitle
-            it.otherTitle to form.otherTitle
+            it.originTitle to if(form.originTitle?.isNotBlank() == true) form.originTitle else null
+            it.otherTitle to if(form.otherTitle?.isNotBlank() == true) form.otherTitle else null
             it.publishType to form.publishType
             it.publishTime to publishTime
             it.episodeDuration to form.episodeDuration
@@ -174,8 +174,8 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             it.publishedEpisodes to publishedEpisodes
             it.publishedRecord to publishedRecord
             it.publishPlan to publishPlan
-            it.introduction to form.introduction
-            it.keyword to form.keyword
+            it.introduction to if(form.introduction?.isNotBlank() == true) form.introduction else null
+            it.keyword to if(form.keyword?.isNotBlank() == true) form.keyword else null
             it.sexLimitLevel to form.sexLimitLevel
             it.violenceLimitLevel to form.violenceLimitLevel
             it.originalWorkType to form.originalWorkType
@@ -213,10 +213,10 @@ class AnimationServiceImpl(@Autowired private val database: Database,
             it.updateTime to now
             it.updater to updater.id
             if(form.title != null) it.title to form.title
-            if(form.originTitle != null) it.originTitle to form.originTitle
-            if(form.otherTitle != null) it.otherTitle to form.otherTitle
-            if(form.introduction != null) it.introduction to form.introduction
-            if(form.keyword != null) it.keyword to form.keyword
+            if(form.originTitle != null) it.originTitle to if(form.originTitle.isNotBlank()) form.originTitle else null
+            if(form.otherTitle != null) it.otherTitle to if(form.otherTitle.isNotBlank()) form.otherTitle else null
+            if(form.introduction != null) it.introduction to if(form.introduction.isNotBlank()) form.introduction else null
+            if(form.keyword != null) it.keyword to if(form.keyword.isNotBlank()) form.keyword else null
             if(form.sexLimitLevel != null) it.sexLimitLevel to form.sexLimitLevel
             if(form.violenceLimitLevel != null) it.violenceLimitLevel to form.violenceLimitLevel
             if(form.originalWorkType != null) it.originalWorkType to form.originalWorkType

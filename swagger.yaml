@@ -1091,11 +1091,11 @@ components:
         origin_title:
           type: string
           maxLength: 128
-          description: 原语言标题，不允许为空
+          description: 原语言标题
         other_title:
           type: string
           maxLength: 128
-          description: 其他标题，不允许为空
+          description: 其他标题
         introduction:
           type: string
           description: 简介
@@ -1188,11 +1188,11 @@ components:
         origin_name:
           type: string
           maxLength: 64
-          description: 相关人员原语言名称。不能为空
+          description: 相关人员原语言名称
         remark:
           type: string
           maxLength: 64
-          description: 相关人员的别称。不能为空
+          description: 相关人员的别称
         is_organization:
           type: boolean
           description: staff是否为组织。否表示个人

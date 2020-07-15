@@ -64,8 +64,8 @@ class StaffServiceImpl(@Autowired private val database: Database) : StaffService
         val now = DateTimeUtil.now()
         return database.insertAndGenerateKey(Staffs) {
             it.name to staffForm.name
-            it.originName to staffForm.originName
-            it.remark to staffForm.remark
+            it.originName to if(staffForm.originName?.isNotBlank() == true) staffForm.originName else null
+            it.remark to if(staffForm.remark?.isNotBlank() == true) staffForm.remark else null
             it.isOrganization to staffForm.isOrganization
             it.occupation to staffForm.occupation
             it.createTime to now
@@ -81,8 +81,8 @@ class StaffServiceImpl(@Autowired private val database: Database) : StaffService
         }
         if(database.update(Staffs) {
             it.name to staffForm.name
-            it.originName to staffForm.originName
-            it.remark to staffForm.remark
+            it.originName to if(staffForm.originName?.isNotBlank() == true) staffForm.originName else null
+            it.remark to if(staffForm.remark?.isNotBlank() == true) staffForm.remark else null
             it.isOrganization to staffForm.isOrganization
             it.occupation to staffForm.occupation
             it.updateTime to DateTimeUtil.now()

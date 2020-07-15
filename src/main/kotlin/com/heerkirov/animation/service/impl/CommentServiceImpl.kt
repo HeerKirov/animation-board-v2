@@ -130,8 +130,8 @@ class CommentServiceImpl(@Autowired private val database: Database) : CommentSer
             it.animationId to form.animationId
             it.ownerId to user.id
             it.score to form.score
-            it.title to form.articleTitle
-            it.article to form.article
+            it.title to if(form.articleTitle?.isNotBlank() == true) form.articleTitle else null
+            it.article to if(form.article?.isNotBlank() == true) form.article else null
             it.createTime to now
             it.updateTime to now
         }
@@ -162,8 +162,8 @@ class CommentServiceImpl(@Autowired private val database: Database) : CommentSer
         if(database.update(Comments) {
             where { (it.animationId eq animationId) and (it.ownerId eq user.id) }
             if(form.score != null) it.score to form.score
-            if(form.articleTitle != null) it.title to form.articleTitle
-            if(form.article != null) it.article to form.article
+            if(form.articleTitle != null) it.title to if(form.articleTitle.isNotBlank()) form.articleTitle else null
+            if(form.article != null) it.article to if(form.article.isNotBlank()) form.article else null
             it.updateTime to DateTimeUtil.now()
         } == 0) throw NotFoundException("Comment of animation $animationId not found.")
     }

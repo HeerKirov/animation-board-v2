@@ -57,7 +57,7 @@ class AnimationTagProcessor(@Autowired private val database: Database) {
                 else -> throw BadRequestException(ErrCode.PARAM_ERROR, "Tag must be id(Int) or name(String).")
             }
         }
-        val ret = arrayListOf(tags.size)
+        val ret = ArrayList<Int>(tags.size)
         //处理值是id的tags
         if(ids.isNotEmpty()) {
             val idRowSet = database.from(Tags).select(Tags.id).where { Tags.id inList ids }

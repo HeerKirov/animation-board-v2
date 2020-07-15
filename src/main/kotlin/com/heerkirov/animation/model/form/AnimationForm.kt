@@ -8,8 +8,8 @@ import com.heerkirov.animation.enums.*
 import java.time.LocalDateTime
 
 data class AnimationForm(@Field("title") @NotBlank @MaxLength(128) val title: String,
-                         @Field("origin_title") @NotBlank @MaxLength(128) val originTitle: String? = null,
-                         @Field("other_title") @NotBlank @MaxLength(128) val otherTitle: String? = null,
+                         @Field("origin_title") @MaxLength(128) val originTitle: String? = null,
+                         @Field("other_title") @MaxLength(128) val otherTitle: String? = null,
                          @Field("introduction") val introduction: String? = null,
                          @Field("keyword") @MaxLength(255) val keyword: String? = null,
                          @Field("sex_limit_level") val sexLimitLevel: SexLimitLevel? = null,
@@ -26,8 +26,8 @@ data class AnimationForm(@Field("title") @NotBlank @MaxLength(128) val title: St
                          @Field("relations") val relations: Map<RelationType, List<Int>> = emptyMap())
 
 class AnimationPartialForm(@Field("title") @NotBlank @MaxLength(128) val title: String? = null,
-                           @Field("origin_title") @NotBlank @MaxLength(128) val originTitle: String? = null,
-                           @Field("other_title") @NotBlank @MaxLength(128) val otherTitle: String? = null,
+                           @Field("origin_title") @MaxLength(128) val originTitle: String? = null,
+                           @Field("other_title") @MaxLength(128) val otherTitle: String? = null,
                            @Field("introduction") val introduction: String? = null,
                            @Field("keyword") @MaxLength(255) val keyword: String? = null,
                            @Field("sex_limit_level") val sexLimitLevel: SexLimitLevel? = null,
