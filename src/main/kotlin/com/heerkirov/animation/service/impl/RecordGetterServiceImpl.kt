@@ -40,7 +40,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
 
     private val detailFields = arrayOf(
             Animations.title, Animations.cover, Records.seenOriginal, Records.inDiary, Records.scatterRecord,
-            Animations.totalEpisodes, Animations.publishedEpisodes, Records.progressCount,
+            Animations.totalEpisodes, Animations.publishedEpisodes, Animations.publishPlan, Records.progressCount,
             Records.createTime, Records.updateTime, RecordProgresses.watchedEpisodes
     )
 
@@ -197,6 +197,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                 totalEpisodes = totalEpisodes,
                 publishedEpisodes = publishedEpisodes,
                 watchedEpisodes = watchedEpisodes ?: 0,
+                publishPlan = rowSet[Animations.publishPlan]!!.map { it.toDateTimeString() },
                 progressCount = progressCount,
                 createTime = rowSet[Records.createTime]!!.toDateTimeString(),
                 updateTime = rowSet[Records.updateTime]!!.toDateTimeString()

@@ -59,6 +59,7 @@ data class RecordDetailRes(@JsonProperty("animation_id") val animationId: Int,
                            @JsonProperty("published_episodes") val publishedEpisodes: Int,
                            @JsonProperty("watched_episodes") val watchedEpisodes: Int,
                            @JsonProperty("progress_count") val progressCount: Int,
+                           @JsonProperty("publish_plan") val publishPlan: List<String>,
                            @JsonProperty("create_time") val createTime: String,
                            @JsonProperty("update_time") val updateTime: String)
 

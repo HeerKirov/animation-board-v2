@@ -627,13 +627,8 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/ListResult'
-                  - type: object
-                    properties:
-                      result:
-                        type: array
-                        items: {$ref: '#/components/schemas/ProgressRes'}
+                type: array
+                items: {$ref: '#/components/schemas/ProgressRes'}
     post:
       summary: 为观看记录创建一条新进度
       description: 创建一条全新的进度。按照约束，只有当前没有进度，或当前最新的进度已完成时，才能创建新的进度。
@@ -969,13 +964,8 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/ListResult'
-                  - type: object
-                    properties:
-                      result:
-                        type: array
-                        items: {$ref: '#/components/schemas/MessageRes'}
+                type: array
+                items: {$ref: '#/components/schemas/MessageRes'}
   /api/user/messages/count:
     get:
       summary: 查看消息数量
@@ -997,7 +987,7 @@ paths:
               schema:
                 type: integer
                 description: 符合此条件的消息数量
-  /api/user/messages/mark-as/read:
+  /api/user/messages/mark-as-read:
     post:
       summary: 将消息标记为已读
       tags: [User]
@@ -1659,6 +1649,12 @@ components:
         - $ref: '#/components/schemas/RecordEpisodesPart'
         - type: object
           properties:
+            publish_plan:
+              type: array
+              items:
+                type: string
+                format: yyyy-M-ddThh:mm:ssZ
+              description: 放送计划
             seen_original:
               type: boolean
               description: 看过原作
