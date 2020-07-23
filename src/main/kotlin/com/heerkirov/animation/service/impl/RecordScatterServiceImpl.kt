@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 @Service
@@ -159,10 +160,14 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
      * 从离散记录中抽取出可沉降的项。
      */
     private fun groupInScatterRecord(scatterRecord: List<ScatterRecord>, fromEpisode: Int, totalEpisodes: Int, prevItem: LocalDateTime): Pair<List<ScatterRecord>, List<LocalDateTime>> {
+        val unusedRecord = ArrayList<ScatterRecord>(scatterRecord.size)
         val scatterMap = HashMap<Int, LinkedList<LocalDateTime>>().apply {
-            for ((episode, datetime) in scatterRecord) {
+            for (record in scatterRecord) {
+                val (episode, datetime) = record
                 if(episode >= fromEpisode) {
-                    this.computeIfAbsent(episode) { LinkedList<LocalDateTime>() }.add(datetime.parseDateTime())
+                    this.computeIfAbsent(episode) { LinkedList() }.add(datetime.parseDateTime())
+                }else{
+                    unusedRecord.add(record)
                 }
             }
         }
@@ -175,7 +180,11 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
             nextEpisode += 1
         }
 
-        return Pair(scatterMap.flatMap { (episode, list) -> list.map { ScatterRecord(episode, it.toDateTimeString()) } }, groupedList)
+        val leftRecord = scatterMap.flatMap { (episode, list) ->
+            list.map { ScatterRecord(episode, it.toDateTimeString()) }
+        }
+
+        return Pair(unusedRecord + leftRecord, groupedList)
     }
 
     /**
