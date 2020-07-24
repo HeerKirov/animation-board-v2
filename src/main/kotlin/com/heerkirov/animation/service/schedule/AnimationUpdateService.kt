@@ -26,7 +26,7 @@ class AnimationUpdateService(@Autowired private val database: Database,
     /**
      * 执行自动发布动画更新的任务。
      */
-    @Scheduled(cron = "\${service.schedule.animation.publish.cron}")
+    @Scheduled(cron = "\${service.schedule.animation.publish}")
     @Transactional
     fun publishAnimationByPlan() {
         val now = DateTimeUtil.now()

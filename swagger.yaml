@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   title: Animation Board v2
-  version: 0.1.0
+  version: 0.2.0
   description: |
     Animation Board的v2版本。
     这是一个Basic Service下属的应用，使用BS提供的用户认证服务。有关BS的使用，见[Basic Service REST API](http://www.heerkirov.com/swagger/?url=/swagger/docs/basic-service.yaml)。
@@ -61,6 +61,8 @@ tags:
     description: "用户观看记录"
   - name: "Comment"
     description: "用户评价"
+  - name: "Statistic"
+    description: "用户行为统计"
   - name: "User"
     description: "用户相关服务"
   - name: "Util"
@@ -912,6 +914,78 @@ paths:
       responses:
         204:
           description: No Content
+  /api/statistics/overview:
+    get:
+      summary: '查看【概览】'
+      description: 【概览】列出用户看过的动画的大致情况，主要为数量和评分，并且还包括几项主要纬度的数据分布。
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OverviewRes'}
+    post:
+      summary: '手动更新【概览】'
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OverviewRes'}
+  /api/statistics/season:
+    get:
+      summary: '查看【季度】总览信息'
+      description: 【季度】列出用户每一个季度的追番报表，以及全部季度的纵向分析。
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
+    post:
+      summary: '手动更新【季度】的全部季度'
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
+  /api/statistics/season/{season}:
+    get:
+      summary: '查看【季度】的指定季度报表'
+      description: 【季度】列出用户每一个季度的追番报表，以及全部季度的纵向分析。
+      tags: [Statistic]
+      parameters:
+        - name: season
+          in: path
+          required: true
+          description: 季度
+          schema: {type: string, format: yyyy-S}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SeasonRes'}
+    post:
+      summary: '手动更新【季度】的指定季度报表'
+      tags: [Statistic]
+      parameters:
+        - name: season
+          in: path
+          required: true
+          description: 季度
+          schema: {type: string, format: yyyy-S}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SeasonRes'}
   /api/user/status:
     get:
       summary: 检验用户登录状态
@@ -1842,6 +1916,158 @@ components:
             new_episodes:
               type: integer
               description: 更新后的episodes
+    OverviewRes:
+      type: object
+      properties:
+        total_animations:
+          type: integer
+          description: 至少看过1集的动画的总数量
+        total_episodes:
+          type: integer
+          description: 看过的动画集数的累计数量(包括重复和离散)
+        total_duration:
+          type: integer
+          description: 看过的动画集数的累计时长(包括重复和离散)，单位分钟。依赖动画的episode_duration属性，不设置此属性的不列入统计
+        score_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            description: 所有动画的评分数量分布。`key`为分数`[1, 10]`，值为动画数量。没有数量的评分不列入。
+        original_work_type_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            description: 所有动画的原作类型数量分布。`key`为原作类型的枚举，值为动画数量。没有数量的不列入。
+        publish_type_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            description: 所有动画的放送类型数量分布。`key`为放送类型的枚举，值为动画数量。没有数量的不列入。
+        sex_limit_level_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            description: 所有动画的性限制等级数量分布。`key`为限制等级的枚举，值为动画数量。没有数量的不列入。
+        violence_limit_level_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            description: 所有动画暴力性限制等级数量分布。`key`为限制等级的枚举，值为动画数量。没有数量的不列入。
+        tag_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            description: 所有动画的标签数量分布。`key`为标签的`name`，值为动画数量。没有数量的不列入。
+        sex_limit_level_avg_scores:
+          type: object
+          additionalProperties:
+            type: number
+            description: 所有动画的性限制等级的评分分布。`key`为限制等级的枚举，值为平均分。动画数量为0的不列入。
+        violence_limit_level_avg_scores:
+          type: object
+          additionalProperties:
+            type: number
+            description: 所有动画的暴力限制等级的评分分布。`key`为限制等级的枚举，值为平均分。动画数量为0的不列入。
+        tag_avg_scores:
+          type: object
+          additionalProperties:
+            type: number
+            description: 所有动画的标签的评分分布。`key`为标签的`name`，值为平均分。动画数量为0的不列入。
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 上次更新时间
+    SeasonOverviewRes:
+      type: object
+      properties:
+        begin_year:
+          type: integer
+          description: 最早一季的年份
+        begin_season:
+          type: integer
+          description: 最早一季的季度，取[1, 4]
+        end_year:
+          type: integer
+          description: 最新一季的年份
+        end_season:
+          type: integer
+          description: 最新一季的季度，取[1, 4]
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 上次更新时间
+    SeasonRes:
+      type: object
+      properties:
+        total_animations:
+          type: integer
+          description: 此季度总共订阅的动画数量
+        max_score:
+          type: integer
+          nullable: true
+          description: 本季最高的评分
+        min_score:
+          type: integer
+          nullable: true
+          description: 本季最低的评分
+        avg_score:
+          type: number
+          nullable: true
+          description: 本季平均分
+        avg_positivity:
+          type: number
+          nullable: true
+          description: 本季平均积极性
+        sex_limit_level_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            description: 所有动画的性限制等级数量分布。`key`为限制等级的枚举，值为动画数量。没有数量的不列入。
+        violence_limit_level_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            description: 所有动画暴力性限制等级数量分布。`key`为限制等级的枚举，值为动画数量。没有数量的不列入。
+        tag_counts:
+          type: object
+          additionalProperties:
+            type: integer
+            description: 所有动画的标签数量分布。`key`为标签的`name`，值为动画数量。没有数量的不列入。
+        animations:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              title:
+                type: string
+              cover:
+                type: string
+                nullable: true
+              sex_limit_level: {$ref: '#/components/schemas/SexLimitLevel'}
+              violence_limit_level: {$ref: '#/components/schemas/ViolenceLimitLevel'}
+              subscription_time:
+                type: string
+                format: yyyy-MM-ddThh:mm:ssZ
+                description: 订阅时间
+              finish_time:
+                type: string
+                nullable: true
+                format: yyyy-MM-ddThh:mm:ssZ
+                description: 看完时间
+              score:
+                type: integer
+                nullable: true
+                description: 此动画的评分
+              positivity:
+                type: number
+                nullable: true
+                description: 此动画的积极性分数
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 上次更新时间
     ListResult:
       type: object
       properties:

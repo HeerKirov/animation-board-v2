@@ -15,6 +15,7 @@ import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 
 @Component
 class OverviewManager(@Autowired private val database: Database) {
@@ -54,6 +55,7 @@ class OverviewManager(@Autowired private val database: Database) {
                        val scatterRecord: List<ScatterRecord>, val progressCount: Int,
                        val watchedEpisodes: Int?, val score: Int?)
 
+        //查找出用户有record的全部animation
         val rowSets = database.from(Animations)
                 .innerJoin(Records, (Animations.id eq Records.animationId) and (Records.ownerId eq user.id))
                 .leftJoin(RecordProgresses, (RecordProgresses.ordinal eq Records.progressCount) and (RecordProgresses.recordId eq Records.id))
@@ -67,18 +69,23 @@ class OverviewManager(@Autowired private val database: Database) {
                         it[Records.scatterRecord]!!, it[Records.progressCount]!!,
                         it[RecordProgresses.watchedEpisodes], it[Comments.score]) }
 
+        //计算至少有1离散记录或存在至少1观看数的动画总数
         val totalAnimations = rowSets.asSequence()
                 .filter { (it.watchedEpisodes != null && it.watchedEpisodes > 0) || it.scatterRecord.isNotEmpty() }
                 .count()
+        //计算动画的平均时长，以及动画的总共观看集数
         val totalEpisodeMap = rowSets.map {
             val progressEpisodes = if(it.watchedEpisodes == null) { 0 }else{
                 (it.progressCount - 1) * it.totalEpisodes + it.watchedEpisodes
             }
             Pair(it.episodeDuration, it.scatterRecord.size + progressEpisodes)
         }
+        //对总集数求和
         val totalEpisodes = totalEpisodeMap.asSequence().map { it.second }.sum()
+        //对总集数和平均时长的乘积求和
         val totalDuration = totalEpisodeMap.asSequence().map { (it.first ?: 0) * it.second }.sum()
 
+        //从列表导出各种维度的动画数量
         val scoreCounts = rowSets.asSequence()
                 .filter { it.score != null }
                 .groupBy { it.score!! }
@@ -114,7 +121,32 @@ class OverviewManager(@Autowired private val database: Database) {
                 .asSequence()
                 .map { Pair(it[Tags.name]!!, it.getInt(2)) }
                 .toMap()
+        //从列表导出各种维度的动画平均分
+        val sexLimitLevelAvgScores = rowSets.asSequence()
+                .filter { it.sexLimitLevel != null && it.score != null }
+                .groupBy { it.sexLimitLevel!! }
+                .mapValues { it.value.sumByDouble { row -> row.score!!.toDouble() } / it.value.size }
+                .toSortedMap()
+        val violenceLimitLevelAvgScores = rowSets.asSequence()
+                .filter { it.violenceLimitLevel != null && it.score != null }
+                .groupBy { it.violenceLimitLevel!! }
+                .mapValues { it.value.sumByDouble { row -> row.score!!.toDouble() } / it.value.size }
+                .toSortedMap()
+        //重新查找数据库并计算标签维度的动画平均分
+        val tagAvgScores = database.from(Tags)
+                .innerJoin(AnimationTagRelations, AnimationTagRelations.tagId eq Tags.id)
+                .innerJoin(Animations, Animations.id eq AnimationTagRelations.animationId)
+                .innerJoin(Records, (Records.animationId eq Animations.id) and (Records.ownerId eq user.id))
+                .innerJoin(Comments, (Comments.animationId eq Animations.id) and (Comments.score.isNotNull()))
+                .select(Tags.name, avg(Comments.score))
+                .groupBy(Tags.id)
+                .orderBy(avg(Comments.score).desc())
+                .asSequence()
+                .map { Pair(it[Tags.name]!!, it.getDouble(2)) }
+                .toMap()
 
-        return OverviewModal(totalAnimations, totalEpisodes, totalDuration, scoreCounts, originalWorkTypeCounts, publishTypeCounts, sexLimitLevelCounts, violenceLimitLevelCounts, tagCounts)
+        return OverviewModal(totalAnimations, totalEpisodes, totalDuration, scoreCounts, originalWorkTypeCounts, publishTypeCounts,
+                sexLimitLevelCounts, violenceLimitLevelCounts, tagCounts,
+                sexLimitLevelAvgScores, violenceLimitLevelAvgScores, tagAvgScores)
     }
 }
