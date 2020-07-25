@@ -2,6 +2,7 @@ package com.heerkirov.animation.service.schedule
 
 import com.heerkirov.animation.dao.Users
 import com.heerkirov.animation.model.data.User
+import com.heerkirov.animation.service.statistics.HistoryLineManager
 import com.heerkirov.animation.service.statistics.OverviewManager
 import com.heerkirov.animation.service.statistics.SeasonManager
 import com.heerkirov.animation.util.logger
@@ -18,7 +19,8 @@ import java.time.LocalDate
 @Service
 class StatisticsUpdateService(@Autowired private val database: Database,
                               @Autowired private val overviewManager: OverviewManager,
-                              @Autowired private val seasonManager: SeasonManager) {
+                              @Autowired private val seasonManager: SeasonManager,
+                              @Autowired private val historyLineManager: HistoryLineManager) {
     private val log = logger<StatisticsUpdateService>()
 
     @Scheduled(cron = "\${service.schedule.statistics.overview}")
@@ -74,6 +76,15 @@ class StatisticsUpdateService(@Autowired private val database: Database,
                     }
                 }
             }
+        }
+    }
+
+    @Scheduled(cron = "\${service.schedule.statistics.historyline}")
+    @Transactional
+    fun updateHistoryLine() {
+        log.info("Compute statistics overview.")
+        for (user in getUsers()) {
+            historyLineManager.update(user)
         }
     }
 

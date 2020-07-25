@@ -49,3 +49,17 @@ data class SeasonModal(val totalAnimations: Int,
                          val score: Int?,
                          val positivity: Double?)
 }
+
+data class HistoryLineModal(val beginYear: Int?,
+                            val beginSeason: Int?,
+                            val endYear: Int?,
+                            val endSeason: Int?,
+                            val items: List<Item>) {
+    data class Item(val year: Int,
+                    val season: Int,
+                    val totalAnimations: Int,
+                    val scoredAnimations: Int,
+                    val maxScore: Int?,
+                    val minScore: Int?,
+                    val sumScore: Int)
+}

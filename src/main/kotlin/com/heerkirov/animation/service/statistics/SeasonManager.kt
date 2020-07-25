@@ -9,6 +9,7 @@ import com.heerkirov.animation.exception.NotFoundException
 import com.heerkirov.animation.model.data.SeasonModal
 import com.heerkirov.animation.model.data.SeasonOverviewModal
 import com.heerkirov.animation.model.data.User
+import com.heerkirov.animation.model.result.SeasonLineRes
 import com.heerkirov.animation.model.result.SeasonOverviewRes
 import com.heerkirov.animation.model.result.SeasonRes
 import com.heerkirov.animation.model.result.toResWith
@@ -29,7 +30,24 @@ class SeasonManager(@Autowired private val database: Database) {
                 ?: SeasonOverviewRes(null, null, null, null, null)
     }
 
-    //TODO 还差一个总轴查询
+    fun getSeasonLine(user: User, lowerYear: Int, lowerSeason: Int, upperYear: Int, upperSeason: Int): SeasonLineRes {
+        val items = database.from(Statistics).select()
+                .where { (Statistics.ownerId eq user.id) and (Statistics.type eq StatisticType.SEASON) and (Statistics.key greaterEq "$lowerYear-$lowerSeason") and (Statistics.key lessEq "$upperYear-$upperSeason") }
+                .orderBy(Statistics.key.asc())
+                .map {
+                    val split = it[Statistics.key]!!.split('-')
+                    val year = split[0].toInt()
+                    val season = split[1].toInt()
+                    val content = it[Statistics.content]!!.parseJSONObject<SeasonModal>().toResWith(it[Statistics.updateTime]!!)
+                    val updateTime = it[Statistics.updateTime]!!
+
+                    val item = SeasonLineRes.Item(year, season, content.totalAnimations, content.maxScore, content.minScore, content.avgScore, content.avgPositivity)
+                    Pair(item, updateTime)
+                }
+        val updateTime = items.asSequence().map { it.second }.max()?.toDateTimeString()
+
+        return SeasonLineRes(items.map { it.first }, updateTime)
+    }
 
     fun get(user: User, year: Int, season: Int): SeasonRes {
         return database.from(Statistics).select()

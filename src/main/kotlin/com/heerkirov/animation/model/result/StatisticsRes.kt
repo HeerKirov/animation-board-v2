@@ -44,6 +44,17 @@ fun SeasonOverviewModal.toResWith(updateTime: LocalDateTime): SeasonOverviewRes 
 
 }
 
+data class SeasonLineRes(@JsonProperty("items") val items: List<Item>,
+                         @JsonProperty("update_time") val updateTime: String?) {
+    data class Item(@JsonProperty("year") val year: Int,
+                    @JsonProperty("season") val season: Int,
+                    @JsonProperty("total_animations") val totalAnimations: Int,
+                    @JsonProperty("max_score") val maxScore: Int?,
+                    @JsonProperty("min_score") val minScore: Int?,
+                    @JsonProperty("avg_score") val avgScore: Double?,
+                    @JsonProperty("avg_positivity") val avgPositivity: Double?)
+}
+
 data class SeasonRes(@JsonProperty("total_animations") val totalAnimations: Int,
                      @JsonProperty("max_score") val maxScore: Int?,
                      @JsonProperty("min_score") val minScore: Int?,
@@ -70,4 +81,13 @@ fun SeasonModal.toResWith(updateTime: LocalDateTime): SeasonRes {
             animations.map { SeasonRes.Animation(it.id, it.title, it.cover, it.sexLimitLevel, it.violenceLimitLevel,
                     it.subscriptionTime, it.finishTime, it.score, it.positivity) },
             updateTime.toDateTimeString())
+}
+
+data class HistoryLineRes(@JsonProperty("items") val items: List<Item>,
+                          @JsonProperty("update_time") val updateTime: String) {
+    data class Item(@JsonProperty("time") val time: String,
+                    @JsonProperty("total_animations") val totalAnimations: Int,
+                    @JsonProperty("max_score") val maxScore: Int?,
+                    @JsonProperty("min_score") val minScore: Int?,
+                    @JsonProperty("avg_score") val avgScore: Double?)
 }

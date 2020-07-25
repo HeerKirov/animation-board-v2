@@ -925,6 +925,8 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/OverviewRes'}
+        404:
+          description: Not Found
     post:
       summary: '手动更新【概览】'
       tags: [Statistic]
@@ -934,7 +936,7 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/OverviewRes'}
-  /api/statistics/season:
+  /api/statistics/season/overview:
     get:
       summary: '查看【季度】总览信息'
       description: 【季度】列出用户每一个季度的追番报表，以及全部季度的纵向分析。
@@ -945,15 +947,28 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
-    post:
-      summary: '手动更新【季度】的全部季度'
+  /api/statistics/line:
+    get:
+      summary: '查看【季度】的时间线报表'
+      description: 按照时间线纵向查询不同季度之间的主要数据对比。
       tags: [Statistic]
+      parameters:
+        - name: lower
+          in: query
+          required: true
+          description: 下界时间范围，为年份-季度信息
+          schema: {type: string, format: yyyy-S}
+        - name: upper
+          in: query
+          required: true
+          description: 上界时间范围，为年份-季度信息，包括此时间点
+          schema: {type: string, format: yyyy-S}
       responses:
         200:
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
+              schema: {$ref: '#/components/schemas/SeasonLineRes'}
   /api/statistics/season/{season}:
     get:
       summary: '查看【季度】的指定季度报表'
@@ -971,6 +986,8 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/SeasonRes'}
+        404:
+          description: Not Found
     post:
       summary: '手动更新【季度】的指定季度报表'
       tags: [Statistic]
@@ -986,6 +1003,64 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/SeasonRes'}
+  /api/statistics/season:
+    post:
+      summary: '手动更新【季度】的全部季度'
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
+  /api/statistics/historyline/overview:
+    get:
+      summary: '查看【历史线】总览信息'
+      description: 【历史线】列出用户看过的动画按照动画发布日期所做的聚合统计，旨在指出不同历史年代的动画平均趋势。
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
+  /api/statistics/histiryline:
+    get:
+      summary: '查询【历史线】的数据'
+      tags: [Statistic]
+      parameters:
+        - name: aggregate
+          in: query
+          required: true
+          description: 聚合到何种时间范围
+          schema: {type: string, enum: [YEAR, SEASON]}
+        - name: lower
+          in: query
+          required: true
+          description: 下界时间范围，根据聚合类型，为`yyyy`或`yyyy-S`
+          schema: {type: string}
+        - name: upper
+          in: query
+          required: true
+          description: 上界时间范围，根据聚合类型，为`yyyy`或`yyyy-S`，包括此时间点
+          schema: {type: string}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HistoryLineRes'}
+        404:
+          description: Not Found
+    post:
+      summary: '手动更新【历史线】的全部数据'
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
   /api/user/status:
     get:
       summary: 检验用户登录状态
@@ -1996,6 +2071,43 @@ components:
           type: string
           format: yyyy-MM-ddThh:mm:ssZ
           description: 上次更新时间
+    SeasonLineRes:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              year:
+                type: integer
+                description: 年份
+              season:
+                type: integer
+                description: 季度，取[1, 4]
+              total_animations:
+                type: integer
+                description: 此季度总共订阅的动画数量
+              max_score:
+                type: integer
+                nullable: true
+                description: 本季最高的评分
+              min_score:
+                type: integer
+                nullable: true
+                description: 本季最低的评分
+              avg_score:
+                type: number
+                nullable: true
+                description: 本季平均分
+              avg_positivity:
+                type: number
+                nullable: true
+                description: 本季平均积极性
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 上次更新时间
     SeasonRes:
       type: object
       properties:
@@ -2064,6 +2176,36 @@ components:
                 type: number
                 nullable: true
                 description: 此动画的积极性分数
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 上次更新时间
+    HistoryLineRes:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              time:
+                type: string
+                description: 时间标记，根据聚合范围而定，为`yyyy`或`yyyy-S`
+              total_animations:
+                type: integer
+                description: 此时间段内总共订阅的动画数量
+              max_score:
+                type: integer
+                nullable: true
+                description: 时间段内最高的评分
+              min_score:
+                type: integer
+                nullable: true
+                description: 时间段内最低的评分
+              avg_score:
+                type: number
+                nullable: true
+                description: 时间段平均分
         update_time:
           type: string
           format: yyyy-MM-ddThh:mm:ssZ
