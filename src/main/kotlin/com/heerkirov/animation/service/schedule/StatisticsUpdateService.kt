@@ -2,9 +2,7 @@ package com.heerkirov.animation.service.schedule
 
 import com.heerkirov.animation.dao.Users
 import com.heerkirov.animation.model.data.User
-import com.heerkirov.animation.service.statistics.HistoryLineManager
-import com.heerkirov.animation.service.statistics.OverviewManager
-import com.heerkirov.animation.service.statistics.SeasonManager
+import com.heerkirov.animation.service.statistics.*
 import com.heerkirov.animation.util.logger
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.from
@@ -20,7 +18,9 @@ import java.time.LocalDate
 class StatisticsUpdateService(@Autowired private val database: Database,
                               @Autowired private val overviewManager: OverviewManager,
                               @Autowired private val seasonManager: SeasonManager,
-                              @Autowired private val historyLineManager: HistoryLineManager) {
+                              @Autowired private val historyLineManager: HistoryLineManager,
+                              @Autowired private val timelineManager: TimelineManager,
+                              @Autowired private val periodManager: PeriodManager) {
     private val log = logger<StatisticsUpdateService>()
 
     @Scheduled(cron = "\${service.schedule.statistics.overview}")
@@ -79,12 +79,30 @@ class StatisticsUpdateService(@Autowired private val database: Database,
         }
     }
 
+    @Scheduled(cron = "\${service.schedule.statistics.timeline}")
+    @Transactional
+    fun updateTimeline() {
+        log.info("Compute statistics timeline.")
+        for (user in getUsers()) {
+            timelineManager.update(user)
+        }
+    }
+
     @Scheduled(cron = "\${service.schedule.statistics.historyline}")
     @Transactional
     fun updateHistoryLine() {
-        log.info("Compute statistics overview.")
+        log.info("Compute statistics historyline.")
         for (user in getUsers()) {
             historyLineManager.update(user)
+        }
+    }
+
+    @Scheduled(cron = "\${service.schedule.statistics.period}")
+    @Transactional
+    fun updatePeriod() {
+        log.info("Compute statistics period.")
+        for (user in getUsers()) {
+            periodManager.update(user)
         }
     }
 

@@ -5,13 +5,6 @@ info:
   description: |
     Animation Board的v2版本。
     这是一个Basic Service下属的应用，使用BS提供的用户认证服务。有关BS的使用，见[Basic Service REST API](http://www.heerkirov.com/swagger/?url=/swagger/docs/basic-service.yaml)。
-    ## 更新日志
-    ### v0.1.0
-    Animation Board v2在v1的版本上做了一些改进和重构。包括：
-    1. 精简了API，使API的构成清晰可读，同时保证满足业务需求的最小参数。
-    2. 将更多业务内容转移到后端实现，而非要求前端实现。
-    3. 优化的数据库表和关联结构。
-    4. 重新设计的日记模型和API结构。
     ## 用户认证
     系统采用BS系统的认证方式，即使用Bearer Token进行唯一认证。发送请求时，首先从BS系统取得有效的Token，随后使用如下header：
     ```
@@ -947,7 +940,7 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
-  /api/statistics/line:
+  /api/statistics/season/line:
     get:
       summary: '查看【季度】的时间线报表'
       description: 按照时间线纵向查询不同季度之间的主要数据对比。
@@ -972,7 +965,6 @@ paths:
   /api/statistics/season/{season}:
     get:
       summary: '查看【季度】的指定季度报表'
-      description: 【季度】列出用户每一个季度的追番报表，以及全部季度的纵向分析。
       tags: [Statistic]
       parameters:
         - name: season
@@ -1013,6 +1005,54 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
+  /api/statistics/timeline/overview:
+    get:
+      summary: '查看【时间线】总览信息'
+      description: 【时间线】列出用户看动画的记录按照观看日期所做的聚合统计，旨在指出用户的生涯中所看动画的分布趋势。
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TimelineOverviewRes'}
+  /api/statistics/timeline:
+    get:
+      summary: '查询【时间线】的数据'
+      tags: [Statistic]
+      parameters:
+        - name: aggregate
+          in: query
+          required: true
+          description: 聚合到何种时间范围
+          schema: {type: string, enum: [YEAR, SEASON, MONTH]}
+        - name: lower
+          in: query
+          required: true
+          description: 下界时间范围，根据聚合类型，为`yyyy`或`yyyy-S`或`yyyy-MM`
+          schema: {type: string}
+        - name: upper
+          in: query
+          required: true
+          description: 上界时间范围，根据聚合类型，为`yyyy`或`yyyy-S`或`yyyy-MM`，包括此时间点
+          schema: {type: string}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TimelineRes'}
+        404:
+          description: Not Found
+    post:
+      summary: '手动更新【时间线】的全部数据'
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TimelineOverviewRes'}
   /api/statistics/historyline/overview:
     get:
       summary: '查看【历史线】总览信息'
@@ -1024,7 +1064,7 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
-  /api/statistics/histiryline:
+  /api/statistics/historyline:
     get:
       summary: '查询【历史线】的数据'
       tags: [Statistic]
@@ -1061,6 +1101,45 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/SeasonOverviewRes'}
+  /api/statistics/period/overview:
+    get:
+      summary: '查看【时间周期】总览信息'
+      description: 【时间周期】给出用户在某一个大段或全部时间内，在一天或一周内的观看行为，旨在指出用户在循环时间中的看番时间点偏好。
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PeriodOverviewRes'}
+  /api/statistics/period/{period}:
+    get:
+      summary: '查看【时间周期】的指定时间段的报表'
+      tags: [Statistic]
+      parameters:
+        - name: period
+          in: path
+          required: true
+          description: 选取数据的时段，填写一个年份`yyyy`，或填写`all`。
+          schema: {type: string}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PeriodRes'}
+        404:
+          description: Not Found
+  /api/statistics/period:
+    post:
+      summary: '手动更新【时间周期】的全部数据'
+      tags: [Statistic]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PeriodOverviewRes'}
   /api/user/status:
     get:
       summary: 检验用户登录状态
@@ -2003,6 +2082,10 @@ components:
         total_duration:
           type: integer
           description: 看过的动画集数的累计时长(包括重复和离散)，单位分钟。依赖动画的episode_duration属性，不设置此属性的不列入统计
+        avg_score:
+          type: number
+          nullable: true
+          description: 所有评过分的动画的平均分
         score_counts:
           type: object
           additionalProperties:
@@ -2057,18 +2140,23 @@ components:
       properties:
         begin_year:
           type: integer
+          nullable: true
           description: 最早一季的年份
         begin_season:
           type: integer
+          nullable: true
           description: 最早一季的季度，取[1, 4]
         end_year:
           type: integer
+          nullable: true
           description: 最新一季的年份
         end_season:
           type: integer
+          nullable: true
           description: 最新一季的季度，取[1, 4]
         update_time:
           type: string
+          nullable: true
           format: yyyy-MM-ddThh:mm:ssZ
           description: 上次更新时间
     SeasonLineRes:
@@ -2206,6 +2294,124 @@ components:
                 type: number
                 nullable: true
                 description: 时间段平均分
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 上次更新时间
+    TimelineOverviewRes:
+      type: object
+      properties:
+        begin_year:
+          type: integer
+          nullable: true
+          description: 最早数据点的年份
+        begin_month:
+          type: integer
+          nullable: true
+          description: 最早数据点的月份，取[1, 12]
+        end_year:
+          type: integer
+          nullable: true
+          description: 最新数据点的年份
+        end_month:
+          type: integer
+          nullable: true
+          description: 最新数据点的季度，取[1, 12]
+        update_time:
+          type: string
+          nullable: true
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 上次更新时间
+    TimelineRes:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              time:
+                type: string
+                description: 数据点时间点，根据聚合类型，为`yyyy`或`yyyy-S`或`yyyy-MM`
+              watched_animations:
+                type: integer
+                description: 此时间段内首次看完的动画数量
+              rewatched_animations:
+                type: integer
+                description: 此时间段内重看看完的动画数量
+              watched_episodes:
+                type: integer
+                description: 此时间段内首次看完的动画集数
+              rewatched_episodes:
+                type: integer
+                description: 此时间段内重看看完的动画集数
+              scatter_episodes:
+                type: integer
+                description: 此时间段内离散地看完的动画集数
+              watched_duration:
+                type: integer
+                description: 此时间段内首次看完的动画集数的总时长
+              rewatched_duration:
+                type: integer
+                description: 此时间段内重看看完的动画集数的总时长
+              scatter_duration:
+                type: integer
+                description: 此时间段内离散地看完的动画集数的总时长
+              max_score:
+                type: integer
+                nullable: true
+                description: 此时间段内首次看完的动画的最高评分
+              min_score:
+                type: integer
+                nullable: true
+                description: 此时间段内首次看完的动画的最低评分
+              avg_score:
+                type: number
+                nullable: true
+                description: 此时间段内首次看完的动画的平均分
+        update_time:
+          type: string
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 上次更新时间
+    PeriodOverviewRes:
+      type: object
+      properties:
+        begin_year:
+          type: integer
+          nullable: true
+          description: 最早数据点的年份
+        end_year:
+          type: integer
+          nullable: true
+          description: 最新数据点的年份
+        update_time:
+          type: string
+          nullable: true
+          format: yyyy-MM-ddThh:mm:ssZ
+          description: 上次更新时间
+    PeriodRes:
+      type: object
+      properties:
+        episode_of_hours:
+          type: object
+          additionalProperties:
+            type: integer
+          description: 本时间段内，以24小时为周期，每个小时内看的动画集数的总和
+        episode_of_weekdays:
+          type: object
+          additionalProperties:
+            type: integer
+          description: 本时间段内，以一周为周期，每天内看的动画集数的总和
+        day_of_hours:
+          type: object
+          additionalProperties:
+            type: integer
+          description: 本时间段内，以24小时为周期，每个小时内看有看动画的天数总和
+        day_of_weekdays:
+          type: object
+          additionalProperties:
+            type: integer
+          description: 本时间段内，以一周为周期，每天有看动画的天数总和
         update_time:
           type: string
           format: yyyy-MM-ddThh:mm:ssZ

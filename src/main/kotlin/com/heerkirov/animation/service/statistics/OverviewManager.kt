@@ -59,7 +59,7 @@ class OverviewManager(@Autowired private val database: Database) {
         val rowSets = database.from(Animations)
                 .innerJoin(Records, (Animations.id eq Records.animationId) and (Records.ownerId eq user.id))
                 .leftJoin(RecordProgresses, (RecordProgresses.ordinal eq Records.progressCount) and (RecordProgresses.recordId eq Records.id))
-                .leftJoin(Comments, Comments.animationId eq Animations.id)
+                .leftJoin(Comments, (Comments.animationId eq Animations.id) and (Comments.ownerId eq user.id))
                 .select(Animations.episodeDuration, Animations.totalEpisodes,
                         Animations.originalWorkType, Animations.publishType, Animations.sexLimitLevel, Animations.violenceLimitLevel,
                         Records.scatterRecord, Records.progressCount,
@@ -84,6 +84,8 @@ class OverviewManager(@Autowired private val database: Database) {
         val totalEpisodes = totalEpisodeMap.asSequence().map { it.second }.sum()
         //对总集数和平均时长的乘积求和
         val totalDuration = totalEpisodeMap.asSequence().map { (it.first ?: 0) * it.second }.sum()
+        //求总平均分
+        val avgScore = rowSets.asSequence().map { it.score }.filterNotNull().average().let { if(it.isNaN()) null else it }
 
         //从列表导出各种维度的动画数量
         val scoreCounts = rowSets.asSequence()
@@ -145,7 +147,8 @@ class OverviewManager(@Autowired private val database: Database) {
                 .map { Pair(it[Tags.name]!!, it.getDouble(2)) }
                 .toMap()
 
-        return OverviewModal(totalAnimations, totalEpisodes, totalDuration, scoreCounts, originalWorkTypeCounts, publishTypeCounts,
+        return OverviewModal(totalAnimations, totalEpisodes, totalDuration, avgScore,
+                scoreCounts, originalWorkTypeCounts, publishTypeCounts,
                 sexLimitLevelCounts, violenceLimitLevelCounts, tagCounts,
                 sexLimitLevelAvgScores, violenceLimitLevelAvgScores, tagAvgScores)
     }

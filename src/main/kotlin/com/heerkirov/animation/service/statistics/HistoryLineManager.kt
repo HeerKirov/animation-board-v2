@@ -50,8 +50,7 @@ class HistoryLineManager(@Autowired private val database: Database) {
         val items = content.items.asSequence()
                 .map { Pair(compValue(it.year, it.season), it) }
                 .filter { it.first in lower..upper }
-                .map { Pair(if(aggregateTimeUnit == AggregateTimeUnit.SEASON) { "${it.second.year}-${it.second.season}" }else{ it.second.year.toString() }, it.second) }
-                .groupBy({ it.first }) { it.second }
+                .groupBy({ if(aggregateTimeUnit == AggregateTimeUnit.SEASON) { "${it.second.year}-${it.second.season}" }else{ it.second.year.toString() } }) { it.second }
                 .map { (time, items) ->
                     val totalAnimations = items.sumBy { it.totalAnimations }
                     val scoredAnimations = items.sumBy { it.scoredAnimations }
@@ -70,7 +69,7 @@ class HistoryLineManager(@Autowired private val database: Database) {
     fun update(user: User) {
         val modal = generate(user)
 
-        val id = database.from(Statistics).select()
+        val id = database.from(Statistics).select(Statistics.id)
                 .where { (Statistics.ownerId eq user.id) and (Statistics.type eq StatisticType.HISTORY) }
                 .firstOrNull()?.get(Statistics.id)
         if(id == null) {
@@ -95,30 +94,29 @@ class HistoryLineManager(@Autowired private val database: Database) {
 
         val rowSets = database.from(Animations)
                 .innerJoin(Records, (Records.animationId eq Animations.id) and (Records.ownerId eq user.id))
-                .leftJoin(Comments, (Comments.animationId eq Animations.id) and (Comments.score.isNotNull()))
+                .leftJoin(Comments, (Comments.animationId eq Animations.id) and (Comments.ownerId eq user.id) and (Comments.score.isNotNull()))
                 .select(Animations.publishTime, Comments.score)
                 .where { (Animations.publishTime.isNotNull()) }
                 .asSequence()
                 .map { Row(it[Animations.publishTime]!!, it[Comments.score]) }
                 .groupBy { Pair(it.publishTime.year, (it.publishTime.monthValue - 1) / 3 + 1) }
-                .mapValues { (pair, items) ->
+                .map { (pair, items) ->
                     val scoredItems = items.filter { it.score != null }.map { it.score!! }
                     val maxScore = scoredItems.max()
                     val minScore = scoredItems.min()
                     val sumScore = scoredItems.sum()
                     HistoryLineModal.Item(pair.first, pair.second, items.size, scoredItems.size, maxScore, minScore, sumScore)
                 }
-                .toSortedMap(Comparator { o1, o2 -> (compValue(o1.first, o1.second)).compareTo(compValue(o2.first, o2.second)) })
-                .values
+                .sortedBy { compValue(it.year, it.season) }
                 .toList()
 
         return HistoryLineModal(rowSets.firstOrNull()?.year, rowSets.firstOrNull()?.season, rowSets.lastOrNull()?.year, rowSets.lastOrNull()?.season, rowSets)
     }
+}
 
-    /**
-     * 将年和季度转换为更容易比较的值。
-     */
-    private fun compValue(year: Int, season: Int): Int {
-        return season + year * 4
-    }
+/**
+ * 将年和季度转换为更容易比较的值。
+ */
+private fun compValue(year: Int, season: Int): Int {
+    return season + year * 4
 }

@@ -2,13 +2,10 @@ package com.heerkirov.animation.service.impl
 
 import com.heerkirov.animation.enums.AggregateTimeUnit
 import com.heerkirov.animation.model.data.User
-import com.heerkirov.animation.model.result.HistoryLineRes
-import com.heerkirov.animation.model.result.SeasonLineRes
-import com.heerkirov.animation.model.result.SeasonOverviewRes
+import com.heerkirov.animation.model.result.PeriodOverviewRes
+import com.heerkirov.animation.model.result.PeriodRes
 import com.heerkirov.animation.service.StatisticsService
-import com.heerkirov.animation.service.statistics.HistoryLineManager
-import com.heerkirov.animation.service.statistics.OverviewManager
-import com.heerkirov.animation.service.statistics.SeasonManager
+import com.heerkirov.animation.service.statistics.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,7 +14,9 @@ import java.time.LocalDate
 @Service
 class StatisticsServiceImpl(@Autowired private val overviewManager: OverviewManager,
                             @Autowired private val seasonManager: SeasonManager,
-                            @Autowired private val historyLineManager: HistoryLineManager) : StatisticsService {
+                            @Autowired private val historyLineManager: HistoryLineManager,
+                            @Autowired private val timelineManager: TimelineManager,
+                            @Autowired private val periodManager: PeriodManager) : StatisticsService {
 
     override fun getOverview(user: User) = overviewManager.get(user)
 
@@ -27,9 +26,17 @@ class StatisticsServiceImpl(@Autowired private val overviewManager: OverviewMana
 
     override fun getSeason(user: User, year: Int, season: Int) = seasonManager.get(user, year, season)
 
+    override fun getTimelineOverview(user: User) = timelineManager.getOverview(user)
+
+    override fun getTimeline(user: User, lower: LocalDate, upper: LocalDate, aggregateTimeUnit: AggregateTimeUnit) = timelineManager.get(user, lower, upper, aggregateTimeUnit)
+
     override fun getHistoryLineOverview(user: User) = historyLineManager.getOverview(user)
 
     override fun getHistoryLine(user: User, lowerYear: Int, lowerSeason: Int, upperYear: Int, upperSeason: Int, aggregateTimeUnit: AggregateTimeUnit) = historyLineManager.get(user, lowerYear, lowerSeason, upperYear, upperSeason, aggregateTimeUnit)
+
+    override fun getPeriodOverview(user: User) = periodManager.getOverview(user)
+
+    override fun getPeriod(user: User, year: Int?) = periodManager.get(user, year)
 
     @Transactional
     override fun updateOverview(user: User) {
@@ -54,7 +61,17 @@ class StatisticsServiceImpl(@Autowired private val overviewManager: OverviewMana
     }
 
     @Transactional
+    override fun updateTimeline(user: User) {
+        timelineManager.update(user)
+    }
+
+    @Transactional
     override fun updateHistoryLine(user: User) {
         historyLineManager.update(user)
+    }
+
+    @Transactional
+    override fun updatePeriod(user: User) {
+        periodManager.update(user)
     }
 }

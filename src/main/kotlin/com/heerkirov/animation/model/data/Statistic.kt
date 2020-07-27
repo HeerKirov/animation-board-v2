@@ -13,6 +13,7 @@ data class Statistic(val id: Long,
 data class OverviewModal(val totalAnimations: Int,
                          val totalEpisodes: Int,
                          val totalDuration: Int,
+                         val avgScore: Double?,
                          val scoreCounts: Map<Int, Int>,
                          val originalWorkTypeCounts: Map<OriginalWorkType, Int>,
                          val publishTypeCounts: Map<PublishType, Int>,
@@ -24,10 +25,7 @@ data class OverviewModal(val totalAnimations: Int,
                          val violenceLimitLevelAvgScores: Map<ViolenceLimitLevel, Double>?,
                          val tagAvgScores: Map<String, Double>?)
 
-data class SeasonOverviewModal(val beginYear: Int,
-                               val beginSeason: Int,
-                               val endYear: Int,
-                               val endSeason: Int)
+data class SeasonOverviewModal(val beginYear: Int?, val beginSeason: Int?, val endYear: Int?, val endSeason: Int?)
 
 data class SeasonModal(val totalAnimations: Int,
                        val maxScore: Int?,
@@ -50,6 +48,13 @@ data class SeasonModal(val totalAnimations: Int,
                          val positivity: Double?)
 }
 
+data class TimelineOverviewModal(val beginYear: Int?, val beginMonth: Int?, val endYear: Int?, val endMonth: Int?)
+
+data class TimelineModal(val watchedAnimations: Int, val rewatchedAnimations: Int,
+                         val watchedEpisodes: Int, val rewatchedEpisodes: Int, val scatterEpisodes: Int,
+                         val watchedDuration: Int, val rewatchedDuration: Int, val scatterDuration: Int,
+                         val scoredAnimations: Int, val maxScore: Int?, val minScore: Int?, val sumScore: Int)
+
 data class HistoryLineModal(val beginYear: Int?,
                             val beginSeason: Int?,
                             val endYear: Int?,
@@ -63,3 +68,10 @@ data class HistoryLineModal(val beginYear: Int?,
                     val minScore: Int?,
                     val sumScore: Int)
 }
+
+data class PeriodOverviewModal(val beginYear: Int?, val endYear: Int?)
+
+data class PeriodModal(val episodeOfWeekdays: Map<Int, Int>,
+                       val episodeOfHours: Map<Int, Int>,
+                       val dayOfWeekdays: Map<Int, Int>,
+                       val dayOfHours: Map<Int, Int>)
