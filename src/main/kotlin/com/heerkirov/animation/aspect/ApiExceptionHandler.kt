@@ -33,7 +33,10 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(ApiException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun exception(e: ApiException): ErrResult = ErrResult(e)
+    fun exception(e: ApiException): ErrResult {
+        log.error("error occurred. ", e)
+        return ErrResult(e)
+    }
 
     @ExceptionHandler(Throwable::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

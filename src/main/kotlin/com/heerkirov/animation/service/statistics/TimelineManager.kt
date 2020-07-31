@@ -199,7 +199,11 @@ class TimelineManager(@Autowired private val database: Database) {
 
         //三个条件都取到了各自的最大覆盖范围，因此只需这三个就能得到全部key
         val keys = scatterEpisodesAndDurations.keys + secondaryProgressEpisodesAndDurations.keys + firstProgressEpisodesAndDurations.keys
-        return keys.associateWith {
+        if(keys.isEmpty()) {
+            return emptyMap()
+        }
+
+        val keyValues = keys.associateWith {
             val (watchedEpisodes, watchedDuration) = firstProgressEpisodesAndDurations[it] ?: Pair(0, 0)
             val (rewatchedEpisodes, rewatchedDuration) = secondaryProgressEpisodesAndDurations[it] ?: Pair(0, 0)
             val (scatterEpisodes, scatterDuration) = scatterEpisodesAndDurations[it] ?: Pair(0, 0)
@@ -212,6 +216,12 @@ class TimelineManager(@Autowired private val database: Database) {
                     scored?.scoredAnimations ?: 0, scored?.maxScore, scored?.minScore, scored?.sumScore ?: 0
             )
         }
+
+        //迭代从最小值到最大值的全部时间点，防止无数据的时间点被遗漏
+        return stepFor(keys.min()!!.parseDateMonth()!!, keys.max()!!.parseDateMonth()!!) { it.plusMonths(1) }.asSequence()
+                .map { it.toDateMonthString() }
+                .map { Pair(it, keyValues[it] ?: TimelineModal(0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, 0)) }
+                .toMap()
     }
 }
 

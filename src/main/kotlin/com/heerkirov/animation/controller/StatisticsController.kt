@@ -89,13 +89,13 @@ class StatisticsController(@Autowired private val statisticsService: StatisticsS
                 val lower = try { filter.lower.toInt() }catch (e: Exception) { throw BadRequestException(ErrCode.PARAM_ERROR, "Query 'lower' must be 'yyyy'.") }
                 val upper = try { filter.upper.toInt() }catch (e: Exception) { throw BadRequestException(ErrCode.PARAM_ERROR, "Query 'upper' must be 'yyyy'.") }
 
-                statisticsService.getTimeline(user, LocalDate.of(lower, 1, 1), LocalDate.of(upper, 1, 1), AggregateTimeUnit.YEAR)
+                statisticsService.getTimeline(user, LocalDate.of(lower, 1, 1), LocalDate.of(upper, 12, 1), AggregateTimeUnit.YEAR)
             }
             AggregateTimeUnit.SEASON -> {
                 val lower = try { filter.lower.split('-').let { Pair(it[0].toInt(), it[1].toInt()) } }catch (e: Exception) { throw BadRequestException(ErrCode.PARAM_ERROR, "Query 'lower' must be 'yyyy-S'.") }
                 val upper = try { filter.upper.split('-').let { Pair(it[0].toInt(), it[1].toInt()) } }catch (e: Exception) { throw BadRequestException(ErrCode.PARAM_ERROR, "Query 'upper' must be 'yyyy-S'.") }
 
-                statisticsService.getTimeline(user, LocalDate.of(lower.first, (lower.second - 1) * 3 + 1, 1), LocalDate.of(upper.first, (upper.second - 1) * 3 + 1, 1), AggregateTimeUnit.SEASON)
+                statisticsService.getTimeline(user, LocalDate.of(lower.first, (lower.second - 1) * 3 + 1, 1), LocalDate.of(upper.first, upper.second * 3, 1), AggregateTimeUnit.SEASON)
             }
             AggregateTimeUnit.MONTH -> {
                 val lower = filter.lower.parseDateMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Query 'lower' must be 'yyyy-MM'.")

@@ -11,10 +11,7 @@ import com.heerkirov.animation.model.data.HistoryLineModal
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.result.HistoryLineRes
 import com.heerkirov.animation.model.result.SeasonOverviewRes
-import com.heerkirov.animation.util.DateTimeUtil
-import com.heerkirov.animation.util.parseJSONObject
-import com.heerkirov.animation.util.toDateTimeString
-import com.heerkirov.animation.util.toJSONString
+import com.heerkirov.animation.util.*
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -100,17 +97,25 @@ class HistoryLineManager(@Autowired private val database: Database) {
                 .asSequence()
                 .map { Row(it[Animations.publishTime]!!, it[Comments.score]) }
                 .groupBy { Pair(it.publishTime.year, (it.publishTime.monthValue - 1) / 3 + 1) }
-                .map { (pair, items) ->
+                .mapValues { (pair, items) ->
                     val scoredItems = items.filter { it.score != null }.map { it.score!! }
                     val maxScore = scoredItems.max()
                     val minScore = scoredItems.min()
                     val sumScore = scoredItems.sum()
                     HistoryLineModal.Item(pair.first, pair.second, items.size, scoredItems.size, maxScore, minScore, sumScore)
                 }
-                .sortedBy { compValue(it.year, it.season) }
-                .toList()
 
-        return HistoryLineModal(rowSets.firstOrNull()?.year, rowSets.firstOrNull()?.season, rowSets.lastOrNull()?.year, rowSets.lastOrNull()?.season, rowSets)
+        val (beginYear, beginSeason) = rowSets.keys.minBy { compValue(it.first, it.second) } ?: Pair(null, null)
+        val (endYear, endSeason) = rowSets.keys.maxBy { compValue(it.first, it.second) } ?: Pair(null, null)
+        if(beginYear != null && beginSeason != null && endYear != null && endSeason != null) {
+            val items = stepFor(compValue(beginYear, beginSeason), compValue(endYear, endSeason)) { it + 1 }.asSequence()
+                    .map { Pair(it / 4, it % 4 + 1) }
+                    .map { rowSets[it] ?: HistoryLineModal.Item(it.first, it.second, 0, 0, null, null, 0) }
+                    .toList()
+
+            return HistoryLineModal(beginYear, beginSeason, endYear, endSeason, items)
+        }
+        return HistoryLineModal(null, null, null, null, emptyList())
     }
 }
 
@@ -118,5 +123,5 @@ class HistoryLineManager(@Autowired private val database: Database) {
  * 将年和季度转换为更容易比较的值。
  */
 private fun compValue(year: Int, season: Int): Int {
-    return season + year * 4
+    return season + year * 4 - 1
 }
