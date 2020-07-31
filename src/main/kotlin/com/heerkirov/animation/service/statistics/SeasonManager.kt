@@ -126,7 +126,7 @@ class SeasonManager(@Autowired private val database: Database) {
                 it.ownerId to user.id
                 it.type to StatisticType.SEASON_OVERVIEW
                 it.key to null
-                it.content to SeasonOverviewModal(year, season, year, season)
+                it.content to SeasonOverviewModal(year, season, year, season).toJSONString()
                 it.updateTime to DateTimeUtil.now()
             }
             overview.second.beginYear == null || overview.second.beginSeason == null ||
