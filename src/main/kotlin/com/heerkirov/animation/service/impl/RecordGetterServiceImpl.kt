@@ -94,6 +94,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                 .innerJoin(Records, (Animations.id eq Records.animationId) and (Records.ownerId eq user.id))
                 .select()
                 .where { (Animations.totalEpisodes greater Animations.publishedEpisodes) and (Animations.publishPlan notEq emptyList()) }
+                .asSequence()
                 .map { TimetableItem(
                         it[Animations.id]!!,
                         it[Animations.title]!!,
@@ -101,7 +102,9 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                         it[Animations.publishPlan]!!.first().toDateTimeString(),
                         it[Animations.publishedEpisodes]!! + 1
                 ) }
-                .sortedBy { it.nextPublishTime }
+                .map { Pair(it.nextPublishTime.parseDateTime().toLocalTime(), it) }
+                .sortedBy { it.first }
+                .map { it.second }
                 .groupBy {
                     it.nextPublishTime
                             .parseDateTime()
