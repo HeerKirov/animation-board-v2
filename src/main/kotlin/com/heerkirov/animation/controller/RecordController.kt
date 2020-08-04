@@ -132,6 +132,13 @@ class RecordController(@Autowired private val recordGetterService: RecordGetterS
     }
 
     @Authorization
+    @PostMapping("/{animationId}/scatter/undo")
+    fun scatterUndo(@UserIdentity user: User, @PathVariable animationId: Int): Any? {
+        recordScatterService.undoScattered(animationId, user)
+        return null
+    }
+
+    @Authorization
     @PostMapping("/{animationId}/scatter/group")
     fun scatterGroup(@UserIdentity user: User, @PathVariable animationId: Int): ScatterGroupRes {
         return recordScatterService.groupScattered(animationId, user)

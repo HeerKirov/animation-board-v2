@@ -42,6 +42,21 @@ class AnimationTagProcessor(@Autowired private val database: Database) {
                 }
             }
         }
+        //更新数量变化
+        database.batchUpdate(Tags) {
+            for (deleteId in deleteIds) {
+                item {
+                    where { it.id eq deleteId }
+                    it.animationCount to (it.animationCount minus 1)
+                }
+            }
+            for (addId in addIds) {
+                item {
+                    where { it.id eq addId }
+                    it.animationCount to (it.animationCount plus 1)
+                }
+            }
+        }
     }
 
     /**
@@ -98,5 +113,26 @@ class AnimationTagProcessor(@Autowired private val database: Database) {
         }
 
         return ret
+    }
+
+    /**
+     * 更新全部tag的count。
+     */
+    fun updateAllCount() {
+        val rowSets = database.from(Tags)
+                .leftJoin(AnimationTagRelations, Tags.id eq AnimationTagRelations.tagId)
+                .select(Tags.id, count(AnimationTagRelations.animationId))
+                .groupBy(Tags.id)
+                .having { Tags.animationCount notEq count(AnimationTagRelations.animationId) }
+                .map { Pair(it[Tags.id]!!, it.getInt(2)) }
+
+        database.batchUpdate(Tags) {
+            for (row in rowSets) {
+                item {
+                    where { it.id eq row.first }
+                    it.animationCount to row.second
+                }
+            }
+        }
     }
 }

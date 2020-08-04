@@ -1,11 +1,12 @@
 package com.heerkirov.animation.command
 
-import com.heerkirov.animation.service.manager.AnimationRelationProcessor
+import com.heerkirov.animation.service.manager.AnimationStaffProcessor
+import com.heerkirov.animation.service.manager.AnimationTagProcessor
 import com.heerkirov.animation.util.loadProperties
 import me.liuwj.ktorm.database.Database
 
 /**
- * 刷新全数据库的relation关系。
+ * 刷新全数据库的tag和staff的count。
  */
 fun main() {
     val properties = loadProperties("application.properties")
@@ -18,7 +19,7 @@ fun main() {
     )
 
     v2Database.useTransaction {
-        val num = AnimationRelationProcessor(v2Database).updateAllRelationTopology()
-        println("update $num records.")
+        AnimationTagProcessor(v2Database).updateAllCount()
+        AnimationStaffProcessor(v2Database).updateAllCount()
     }
 }

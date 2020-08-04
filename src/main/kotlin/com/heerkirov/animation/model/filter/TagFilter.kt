@@ -5,4 +5,4 @@ import com.heerkirov.animation.aspect.filter.*
 data class TagFilter(@Limit val limit: Int?,
                      @Offset val offset: Int?,
                      @Search val search: String?,
-                     @Order(options = ["name", "create_time", "update_time"], default = "create_time") val order: List<Pair<Int, String>>)
+                     @Order(options = ["name", "group", "ordinal", "animation_count", "create_time", "update_time"], default = "create_time") val order: List<Pair<Int, String>>)

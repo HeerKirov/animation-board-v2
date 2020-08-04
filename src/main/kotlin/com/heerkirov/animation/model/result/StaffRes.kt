@@ -14,6 +14,7 @@ data class StaffRes(val id: Int,
                     val cover: String?,
                     @JsonProperty("is_organization") val isOrganization: Boolean,
                     val occupation: StaffOccupation?,
+                    @JsonProperty("animation_count") val animationCount: Int,
                     @JsonProperty("create_time") val createTime: String,
                     @JsonProperty("update_time") val updateTime: String)
 
@@ -25,5 +26,5 @@ data class StaffRelationRes(val id: Int,
                             @JsonProperty("staff_type") val staffType: StaffTypeInAnimation)
 
 fun Staff.toRes() = StaffRes(
-        id, name, originName, remark, cover, isOrganization, occupation, createTime.toDateTimeString(), updateTime.toDateTimeString()
+        id, name, originName, remark, cover, isOrganization, occupation, animationCount, createTime.toDateTimeString(), updateTime.toDateTimeString()
 )

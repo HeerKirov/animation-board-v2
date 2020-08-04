@@ -9,5 +9,7 @@ interface RecordScatterService {
 
     fun watchScattered(animationId: Int, user: User, episode: Int)
 
+    fun undoScattered(animationId: Int, user: User)
+
     fun groupScattered(animationId: Int, user: User): ScatterGroupRes
 }

@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/database/tags")
 class TagController(@Autowired private val tagService: TagService) {
     @GetMapping("")
-    fun list(@Query tagFilter: TagFilter): ListResult<TagRes> {
-        return tagService.list(tagFilter).map { it.toRes() }
+    fun list(@Query tagFilter: TagFilter): ListResult<TagListRes> {
+        return tagService.list(tagFilter).map { it.toListRes() }
     }
 
     @GetMapping("/{id}")
@@ -29,15 +29,22 @@ class TagController(@Autowired private val tagService: TagService) {
     @Authorization(staff = true)
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    fun create(@UserIdentity user: User, @Body tagForm: TagForm): TagDetailRes {
+    fun create(@UserIdentity user: User, @Body tagForm: TagCreateForm): TagDetailRes {
         val id = tagService.create(tagForm, user)
         return tagService.get(id).toDetailRes()
     }
 
     @Authorization(staff = true)
     @PutMapping("/{id}")
-    fun update(@UserIdentity user: User, @PathVariable id: Int, @Body tagForm: TagForm): TagDetailRes {
+    fun update(@UserIdentity user: User, @PathVariable id: Int, @Body tagForm: TagUpdateForm): TagDetailRes {
         tagService.update(id, tagForm, user)
+        return tagService.get(id).toDetailRes()
+    }
+
+    @Authorization(staff = true)
+    @PatchMapping("/{id}")
+    fun partialUpdate(@UserIdentity user: User, @PathVariable id: Int, @Body tagForm: TagPartialForm): TagDetailRes {
+        tagService.partialUpdate(id, tagForm, user)
         return tagService.get(id).toDetailRes()
     }
 

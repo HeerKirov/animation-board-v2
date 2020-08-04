@@ -13,7 +13,7 @@ class RecordProcessor {
     fun getStatus(progressCount: Int, totalEpisodes: Int, watchedEpisodes: Int?): RecordStatus {
         return when {
             progressCount == 0 -> RecordStatus.NO_PROGRESS
-            watchedEpisodes!! >= totalEpisodes -> RecordStatus.COMPLETED
+            watchedEpisodes ?: 0 >= totalEpisodes -> RecordStatus.COMPLETED
             progressCount == 1 -> RecordStatus.WATCHING
             else -> RecordStatus.REWATCHING
         }

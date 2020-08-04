@@ -88,6 +88,35 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
     }
 
     @Transactional
+    override fun undoScattered(animationId: Int, user: User) {
+        val rowSet = database.from(Records).innerJoin(Animations, Animations.id eq Records.animationId)
+                .select(Records.id, Records.scatterRecord, Animations.totalEpisodes, Animations.publishedEpisodes)
+                .where { (Records.animationId eq animationId) and (Records.ownerId eq user.id) }
+                .firstOrNull() ?: throw NotFoundException("Record of animation $animationId not found.")
+
+        val now = DateTimeUtil.now()
+        val undoLine = now.minusHours(1)
+
+        val watchedRecord = rowSet[Records.scatterRecord]!!
+        val records = watchedRecord.asSequence()
+                .map { Pair(it.episode, it.watchedTime.parseDateTime()) }
+                .sortedBy { it.second }
+                .toList()
+
+        if(records.isEmpty() || records.last().second < undoLine) {
+            throw BadRequestException(ErrCode.INVALID_OPERATION, "There is no scatter in near 1 hour.")
+        }
+
+        val newRecord = records.subList(0, records.size - 1).map { ScatterRecord(it.first, it.second.toDateTimeString()) }
+        val recordId = rowSet[Records.id]!!
+        database.update(Records) {
+            where { it.id eq recordId }
+            it.scatterRecord to newRecord
+            it.updateTime to now
+        }
+    }
+
+    @Transactional
     override fun groupScattered(animationId: Int, user: User): ScatterGroupRes {
         val rowSet = database.from(Records).innerJoin(Animations, Records.animationId eq Animations.id)
                 .select(Records.id, Records.progressCount, Records.scatterRecord, Animations.totalEpisodes, Animations.publishedEpisodes)

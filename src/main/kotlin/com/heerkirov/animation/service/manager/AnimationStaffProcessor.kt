@@ -28,10 +28,17 @@ class AnimationStaffProcessor(@Autowired private val database: Database) {
         }
         //将staff表映射为关系键值对
         val newStaffs = staffs.flatMap { (r, list) -> list.map { Pair(it, r) } }
+        //构建数量变化集合
+        val counts = HashMap<Int, Int>()
+        //查找不变项
+        val keepItems = (oldStaffs intersect newStaffs).asSequence().map { it.first }.toSet()
         //查找需要删除的关联项
         val deleteItems = oldStaffs - newStaffs
         for ((staffId, staffType) in deleteItems) {
             database.delete(AnimationStaffRelations) { (it.animationId eq animationId) and (it.staffId eq staffId) and (it.staffType eq staffType) }
+            if(!keepItems.contains(staffId)) {
+                counts[staffId] = counts.computeIfAbsent(staffId) { 0 } - 1
+            }
         }
         //查找需要增加的关联项
         val addItems = newStaffs - oldStaffs
@@ -41,6 +48,18 @@ class AnimationStaffProcessor(@Autowired private val database: Database) {
                     it.animationId to animationId
                     it.staffId to staffId
                     it.staffType to staffType
+                }
+                if(!keepItems.contains(staffId)) {
+                    counts[staffId] = counts.computeIfAbsent(staffId) { 0 } + 1
+                }
+            }
+        }
+        //更新数量变化
+        database.batchUpdate(Staffs) {
+            counts.forEach { (staffId, delta) ->
+                item {
+                    where { it.id eq staffId }
+                    it.animationCount to (it.animationCount plus delta)
                 }
             }
         }
@@ -56,6 +75,27 @@ class AnimationStaffProcessor(@Autowired private val database: Database) {
             if(rowSet.totalRecords < set.size) {
                 val minus = set.toSet() - rowSet.map { it[Staffs.id]!! }.toSet()
                 throw BadRequestException(ErrCode.PARAM_ERROR, "Staff ${minus.joinToString(", ")} not exists.")
+            }
+        }
+    }
+
+    /**
+     * 更新全部staff的count。
+     */
+    fun updateAllCount() {
+        val rowSets = database.from(Staffs)
+                .leftJoin(AnimationStaffRelations, Staffs.id eq AnimationStaffRelations.staffId)
+                .select(Staffs.id, count(AnimationStaffRelations.animationId))
+                .groupBy(Staffs.id)
+                .having { Staffs.animationCount notEq count(AnimationStaffRelations.animationId) }
+                .map { Pair(it[Staffs.id]!!, it.getInt(2)) }
+
+        database.batchUpdate(Staffs) {
+            for (row in rowSets) {
+                item {
+                    where { it.id eq row.first }
+                    it.animationCount to row.second
+                }
             }
         }
     }

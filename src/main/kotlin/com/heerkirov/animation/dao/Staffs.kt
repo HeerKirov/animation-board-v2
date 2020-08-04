@@ -14,6 +14,7 @@ object Staffs : BaseTable<Staff>("staff") {
     val cover by varchar("cover")
     val isOrganization by boolean("is_organization")
     val occupation by enum("occupation", typeRef<StaffOccupation>())
+    val animationCount by int("animation_count")
     val createTime by datetime("create_time")
     val updateTime by datetime("update_time")
     val creator by int("creator")
@@ -27,6 +28,7 @@ object Staffs : BaseTable<Staff>("staff") {
             cover = row[cover],
             isOrganization = row[isOrganization]!!,
             occupation = row[occupation],
+            animationCount = row[animationCount]!!,
             createTime = row[createTime]!!,
             updateTime = row[updateTime]!!,
             creator = row[creator]!!,

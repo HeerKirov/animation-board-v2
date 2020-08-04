@@ -1,6 +1,7 @@
 package com.heerkirov.animation.service.statistics
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -86,6 +87,13 @@ class TimelineTest {
                         null,
                         LocalDate.of(2020, 1, 4)
                 ), 4, LocalDate.of(2019, 12, 31), LocalDate.of(2020, 1, 4))
+        )
+
+        assertEquals(
+                listOf(LocalDate.of(2020, 8, 2)),
+                getTimePointOfProgress(listOf(
+                    LocalDate.of(2020, 8, 2)
+                ), 1, LocalDate.of(2020, 8, 2), LocalDate.of(2020, 8, 2))
         )
     }
 }

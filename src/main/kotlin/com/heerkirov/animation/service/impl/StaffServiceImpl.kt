@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service
 class StaffServiceImpl(@Autowired private val database: Database) : StaffService {
     private val orderTranslator = OrderTranslator {
         "name" to Staffs.name
+        "animation_count" to Staffs.animationCount
         "create_time" to Staffs.createTime
         "update_time" to Staffs.updateTime
     }

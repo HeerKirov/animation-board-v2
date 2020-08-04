@@ -154,6 +154,11 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                         val s = "%${filter.search}%"
                         it += (Animations.title ilike s) or (Animations.originTitle ilike s) or (Animations.otherTitle ilike s)
                     }
+                    if(filter.ordinal == "first") {
+                        it += RecordProgresses.ordinal eq 1
+                    }else if(filter.ordinal == "last") {
+                        it += RecordProgresses.ordinal eq Records.progressCount
+                    }
                 }
                 .orderBy(RecordProgresses.finishTime.desc())
                 .limit(filter.offset ?: 0, filter.limit ?: 0)

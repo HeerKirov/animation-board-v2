@@ -21,8 +21,7 @@ import com.heerkirov.animation.util.arrayListFor
 import com.heerkirov.animation.util.toDateTimeString
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.find
-import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.entity.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -123,12 +122,6 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
 
         val recordId = rowSet[Records.id]!!
         val progressCount = rowSet[Records.progressCount]!!
-        val latestProgress = if(progressCount == 0) null else database.sequenceOf(RecordProgresses)
-                .find { (RecordProgresses.recordId eq recordId) and (RecordProgresses.ordinal eq progressCount) }
-
-        if(latestProgress != null && latestProgress.finishTime == null) {
-            throw BadRequestException(ErrCode.INVALID_OPERATION, "Cannot create new progress because latest progress is not completed.")
-        }
 
         val now = DateTimeUtil.now()
 
@@ -140,11 +133,42 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
             if(form.startTime != null && form.finishTime != null && form.startTime > form.finishTime) {
                 throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'start_time' must be greater than finish_time.")
             }
-            if(latestProgress != null) {
-                //在存在前一个进度时，需要对时间先后进行校验
-                val newTime = form.startTime ?: form.finishTime
-                if(newTime != null && latestProgress.finishTime!! > newTime) {
-                    throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'start_time'/'finish_time' must be greater than previous finish_time[${latestProgress.finishTime.toDateTimeString()}].")
+
+            val progresses = database.sequenceOf(RecordProgresses)
+                    .filter { (RecordProgresses.recordId eq recordId) }
+                    .sortedBy { it.ordinal }
+                    .toList()
+
+            val ordinal = when {
+                //不存在已有进度，那么新进度可以以任意方式插入
+                progresses.isEmpty() -> 1
+                //存在已有进度，且指定了新进度的完成时间，需要比对确定新进度的插入位置
+                form.finishTime != null -> progresses.asSequence().map { progress ->
+                    when {
+                        //遇到了未完成的记录，那么新记录将插入在未完成记录的前面，也就是使用此未完成记录的ordinal
+                        //遇到了更大的时间点记录，也就是排在此记录的前面
+                        progress.finishTime == null || form.finishTime < progress.finishTime -> progress.ordinal
+                        //遇到了具有相等时间点的记录，按照规则排在此记录的后面一位
+                        form.finishTime == progress.finishTime -> progress.ordinal + 1
+                        else -> null
+                    }
+                }.filterNotNull().firstOrNull() ?: (progresses.size + 1)
+                //存在已有进度，未指定新进度的完成时间，不存在已完成的进度，直接追加到末尾
+                progresses.last().finishTime != null -> progresses.size + 1
+                //存在已有进度，未指定新进度的完成时间，且存在未完成的进度时，提示无法插入
+                else -> throw BadRequestException(ErrCode.INVALID_OPERATION, "Cannot create new progress because latest progress is not completed.")
+            }
+
+            val needUpdate = progresses.filter { it.ordinal >= ordinal }
+            if(needUpdate.isNotEmpty()) {
+                //如果存在大于等于新ordinal的进度，将这些进度的ordinal向后延1
+                database.batchUpdate(RecordProgresses) {
+                    for (progress in needUpdate) {
+                        item {
+                            where { it.id eq progress.id }
+                            it.ordinal to (progress.ordinal + 1)
+                        }
+                    }
                 }
             }
 
@@ -156,7 +180,7 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
 
             database.insert(RecordProgresses) {
                 it.recordId to recordId
-                it.ordinal to (progressCount + 1)
+                it.ordinal to ordinal
                 it.watchedEpisodes to watchedEpisodes
                 it.watchedRecord to arrayListFor(watchedEpisodes) { null }
                 it.startTime to form.startTime
@@ -171,8 +195,14 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
                 it.updateTime to now
             }
 
-            return ProgressRes(progressCount + 1, watchedEpisodes, form.startTime?.toDateTimeString(), form.finishTime?.toDateTimeString())
+            return ProgressRes(ordinal, watchedEpisodes, form.startTime?.toDateTimeString(), form.finishTime?.toDateTimeString())
         }else{
+            val latestProgress = if(progressCount == 0) null else database.sequenceOf(RecordProgresses)
+                    .find { (RecordProgresses.recordId eq recordId) and (RecordProgresses.ordinal eq progressCount) }
+            if(latestProgress != null && latestProgress.finishTime == null) {
+                throw BadRequestException(ErrCode.INVALID_OPERATION, "Cannot create new progress because latest progress is not completed.")
+            }
+
             //普通新增
             database.insert(RecordProgresses) {
                 it.recordId to recordId

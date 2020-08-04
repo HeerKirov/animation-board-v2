@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   title: Animation Board v2
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Animation Board的v2版本。
     这是一个Basic Service下属的应用，使用BS提供的用户认证服务。有关BS的使用，见[Basic Service REST API](http://www.heerkirov.com/swagger/?url=/swagger/docs/basic-service.yaml)。
@@ -219,14 +219,14 @@ paths:
                     properties:
                       result:
                         type: array
-                        items: {$ref: '#/components/schemas/TagRes'}
+                        items: {$ref: '#/components/schemas/TagListRes'}
     post:
       summary: 创建新的标签
       tags: [Tag]
       requestBody:
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/TagForm'}
+            schema: {$ref: '#/components/schemas/TagCreateForm'}
       responses:
         201:
           description: Created
@@ -262,7 +262,31 @@ paths:
       requestBody:
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/TagForm'}
+            schema: {$ref: '#/components/schemas/TagUpdateForm'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TagDetailRes'}
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `ALREADY_EXISTS` - 此name的tag已经存在
+    patch:
+      summary: 部分更新标签内容
+      tags: [Tag]
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TagPartialForm'}
       responses:
         200:
           description: OK
@@ -470,6 +494,11 @@ paths:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Search'
+        - name: ordinal
+          in: query
+          required: false
+          description: 过滤进度序号，根据选项，仅显示最早进度或最新进度
+          schema: {type: string, enum: ["first", "last"]}
       responses:
         200:
           description: OK
@@ -736,6 +765,26 @@ paths:
                   - $ref: '#/components/schemas/ErrResult'
                   - description: |
                       * `INVALID_OPERATION` - 选取的集数超出了total_episodes或published_episodes，不能添加此记录
+  /api/personal/records/{id}/scatter/undo:
+    post:
+      summary: 撤销上一条离散观看记录
+      description: |
+        撤销上一条添加的离散观看记录，用于防止误操作。可以撤销的时间限制在1小时内，超出时间的记录无法撤销。
+      tags: [Record]
+      parameters:
+        - $ref: '#/components/parameters/AnimationId'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `INVALID_OPERATION` - 不存在可以撤销的记录。
   /api/personal/records/{id}/scatter/group:
     post:
       summary: 将离散观看记录沉降到进度
@@ -1383,7 +1432,7 @@ components:
           description: |
             动画关联的其他动画。key表示关联的类型，见RelationType；value表示在此类型下关联的animation.id的列表。
             动画之间的关联可能形成关系网。实际上，编写relations时只需要按最简原则编写每个animation的直接关系，程序会自动推导出每个animation的所有直接和间接关联项，以及这些关联项的正确关系。
-    TagForm:
+    TagCreateForm:
       type: object
       required: [name, introduction]
       properties:
@@ -1395,6 +1444,41 @@ components:
         introduction:
           type: string
           description: 标签介绍
+        group:
+          type: string
+          description: 标签分组
+          nullable: true
+    TagUpdateForm:
+      type: object
+      required: [name, introduction]
+      properties:
+        name:
+          type: string
+          maxLength: 16
+          uniqueItems: true
+          description: 标签名称。不能为空
+        introduction:
+          type: string
+          description: 标签介绍
+    TagPartialForm:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 16
+          uniqueItems: true
+          description: 标签名称
+        introduction:
+          type: string
+          description: 标签介绍
+        group:
+          type: string
+          description: 标签分组
+          nullable: true
+        ordinal:
+          type: integer
+          minimum: 1
+          description: 标签自定义排序序号
     StaffForm:
       type: object
       required: [name, is_organization]
@@ -1473,8 +1557,9 @@ components:
             选择false或不填，以普通模式创建新进度。
             选择true，则以补充模式创建进度。与Record创建的补充模式类似。
             补充模式下，需要使用下面三个参数。
-            * 进度的时间顺序是严格的，finish_time不能早于start_time。
+            * 进度的finish_time不能早于start_time。
             * `finish_time`和`watched_episodes`必须提供其一。finish_time提供时表示此进度已完成，忽略另一个参数，否则表示未完成。
+            * 如果新进度未完成，则必须保证现在没有未完成的进度，且新进度将追加到末尾；如果新进度已完成，则根据finish_time排序决定新进度的位置。
         start_time:
           type: string
           format: yyyy-MM-ddThh:mm:ssZ
@@ -1697,6 +1782,14 @@ components:
         name:
           type: string
           description: 标签名称
+    TagListRes:
+      allOf:
+        - $ref: '#/components/schemas/TagRes'
+        - type: object
+          properties:
+            group:
+              type: integer
+              description: 标签分组
     TagDetailRes:
       allOf:
         - $ref: '#/components/schemas/TagRes'
@@ -1704,8 +1797,17 @@ components:
           properties:
             introduction:
               type: string
-              nullable: true
               description: 标签介绍
+            group:
+              type: string
+              nullable: true
+              description: 标签分组
+            ordinal:
+              type: integer
+              description: 标签的自定义排序顺序
+            animation_count:
+              type: integer
+              description: 此标签下的动画数量
             create_time:
               type: string
               format: yyyy-MM-ddThh:mm:ssZ
@@ -1740,6 +1842,9 @@ components:
           type: string
           nullable: true
           description: 相关人员的别称
+        animation_count:
+          type: integer
+          description: 此staff下的动画数量
         create_time:
           type: string
           format: yyyy-MM-ddThh:mm:ssZ

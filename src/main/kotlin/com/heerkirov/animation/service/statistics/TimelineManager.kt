@@ -236,8 +236,8 @@ fun getTimePointOfProgress(watchedRecord: List<LocalDate?>, watchedEpisodes: Int
     }
 
     val record = Array(watchedEpisodes) { watchedRecord.getOrNull(it) }
-    if(record[0] == null && startTime != null) { record[0] = startTime }
-    if(record[record.size - 1] == null && finishTime != null) { record[record.size - 1] = finishTime }
+    if(record.firstOrNull() == null && startTime != null) { record[0] = startTime }
+    if(record.lastOrNull() == null && finishTime != null) { record[record.size - 1] = finishTime }
 
     var prevIndex: Int? = null
     var prev: LocalDate? = null
