@@ -14,7 +14,7 @@ class AnimationProcessor {
     fun processQuantityAndPlan(totalEpisodes: Int,
                                newPublishedEpisodes: Int,
                                newPublishPlan: List<LocalDateTime>,
-                               oldPublishRecord: List<LocalDateTime?>,
+                               oldPublishedRecord: List<LocalDateTime?>,
                                now: LocalDateTime): Triple<Int, List<LocalDateTime>, List<LocalDateTime?>> {
         //计算实际published quantity
         val publishedEpisodes = if (newPublishedEpisodes > totalEpisodes) totalEpisodes else newPublishedEpisodes
@@ -26,12 +26,14 @@ class AnimationProcessor {
         }.sorted()
         //分割已完成计划和未完成计划
         val (publishPlan, publishedPlan) = totalPlan.filterInto { it > now }
-        //旧记录如果数量超过published quantity，多余部分也会被截去
-        val publishRecord = oldPublishRecord.runIf(oldPublishRecord.size > publishedEpisodes) {
-            it.subList(0, publishedEpisodes)
+        //旧记录的数量如果和旧的publishedEpisodes不匹配，多的截去，少的补null
+        val publishedRecord = when {
+            oldPublishedRecord.size > publishedEpisodes -> oldPublishedRecord.subList(0, publishedEpisodes)
+            oldPublishedRecord.size < publishedEpisodes -> oldPublishedRecord + listOf(*Array<LocalDateTime?>(publishedEpisodes - oldPublishedRecord.size) { null })
+            else -> oldPublishedRecord
         }
 
         //published quantity部分追加已完成计划的数量，同时已完成计划也追加这部分计划
-        return Triple(publishedEpisodes + publishedPlan.size, publishPlan, publishRecord + publishedPlan)
+        return Triple(publishedEpisodes + publishedPlan.size, publishPlan, publishedRecord + publishedPlan)
     }
 }

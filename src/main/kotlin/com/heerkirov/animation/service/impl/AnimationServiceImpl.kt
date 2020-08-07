@@ -110,7 +110,6 @@ class AnimationServiceImpl(@Autowired private val database: Database,
                 .toListResult { Animations.createEntity(it) }
     }
 
-    @Transactional
     override fun get(id: Int): AnimationResult {
         val animation = database.sequenceOf(Animations).find { it.id eq id } ?: throw NotFoundException("Animation not found.")
 

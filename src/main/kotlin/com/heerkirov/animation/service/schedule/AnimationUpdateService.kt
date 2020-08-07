@@ -6,10 +6,10 @@ import com.heerkirov.animation.dao.Records
 import com.heerkirov.animation.dao.Users
 import com.heerkirov.animation.service.manager.MessageProcessor
 import com.heerkirov.animation.util.DateTimeUtil
+import com.heerkirov.animation.util.filterInto
 import com.heerkirov.animation.util.logger
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.Tuple4
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -29,35 +29,46 @@ class AnimationUpdateService(@Autowired private val database: Database,
     @Scheduled(cron = "\${service.schedule.animation.publish}")
     @Transactional
     fun publishAnimationByPlan() {
+        data class Row(val id: Int, val publishedEpisodes: Int, val newPublishedEpisodes: Int, val newPublishPlan: List<LocalDateTime>, val newPublishedRecord: List<LocalDateTime?>)
+
         val now = DateTimeUtil.now()
 
-        val updatedList = LinkedList<Tuple4<Int, Int, Int, List<LocalDateTime?>>>()
+        val updatedList = LinkedList<Row>()
 
         database.from(Animations)
-                .select(Animations.id, Animations.publishPlan, Animations.publishedEpisodes, Animations.totalEpisodes)
+                .select(Animations.id, Animations.publishPlan, Animations.publishedRecord, Animations.publishedEpisodes, Animations.totalEpisodes)
                 .where { (Animations.publishedEpisodes less Animations.totalEpisodes) and (Animations.publishPlan notEq emptyList()) }
                 .forEach { rowSet ->
-                    val id = rowSet[Animations.id]!!
                     val publishPlan = rowSet[Animations.publishPlan]!!
-                    val publishedEpisodes = rowSet[Animations.publishedEpisodes]!!
-                    val totalEpisodes = rowSet[Animations.totalEpisodes]!!
 
                     if(publishPlan.first() <= now) {
-                        val newPublishPlan = publishPlan.filter { it > now }
+                        val oldPublishedRecord = rowSet[Animations.publishedRecord]!!
+                        val publishedEpisodes = rowSet[Animations.publishedEpisodes]!!
+                        val totalEpisodes = rowSet[Animations.totalEpisodes]!!
+
+                        val (newPublishPlan, appendPublishedRecord) = publishPlan.filterInto { it > now }
                         val newPublishedEpisodes = min(publishedEpisodes + publishPlan.size - newPublishPlan.size, totalEpisodes)
 
                         if(newPublishedEpisodes > publishedEpisodes) {
-                            updatedList.add(Tuple4(id, publishedEpisodes, newPublishedEpisodes, newPublishPlan))
+                            val id = rowSet[Animations.id]!!
+                            val publishedRecord = when {
+                                oldPublishedRecord.size > publishedEpisodes -> oldPublishedRecord.subList(0, publishedEpisodes)
+                                oldPublishedRecord.size < publishedEpisodes -> oldPublishedRecord + listOf(*Array<LocalDateTime?>(publishedEpisodes - oldPublishedRecord.size) { null })
+                                else -> oldPublishedRecord
+                            }
+
+                            updatedList.add(Row(id, publishedEpisodes, newPublishedEpisodes, newPublishPlan, publishedRecord + appendPublishedRecord))
                         }
                     }
                 }
 
         database.batchUpdate(Animations) {
-            for ((id, _, publishedEpisodes, publishPlan) in updatedList) {
+            for ((id, _, publishedEpisodes, publishPlan, publishedRecord) in updatedList) {
                 item {
                     where { it.id eq id }
                     it.publishedEpisodes to publishedEpisodes
                     it.publishPlan to publishPlan
+                    it.publishedRecord to publishedRecord
                 }
             }
         }
@@ -79,7 +90,7 @@ class AnimationUpdateService(@Autowired private val database: Database,
         }
 
         if(updatedList.isNotEmpty()) {
-            log.info("Animation [${updatedList.map { it.element1 }.joinToString(", ")}] publish updated.")
+            log.info("Animation [${updatedList.map { it.id }.joinToString(", ")}] publish updated.")
         }
     }
 }
