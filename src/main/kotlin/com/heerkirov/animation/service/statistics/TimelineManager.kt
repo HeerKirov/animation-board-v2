@@ -139,7 +139,7 @@ class TimelineManager(@Autowired private val database: Database) {
     }
 
     fun generate(user: User): Map<String, TimelineModal> {
-        data class ProgressRow(val episodeDuration: Int?, val score: Int?, val ordinal: Int, val timePoint: List<LocalDate>)
+        data class ProgressRow(val episodeDuration: Int?, val score: Int?, val ordinal: Int, val timePoint: List<LocalDate>, val completed: Boolean)
         data class ScatterRow(val episodeDuration: Int?, val scatterRecord: List<LocalDate>)
         data class ScoredRow(val scoredAnimations: Int, val sumScore: Int, val maxScore: Int?, val minScore: Int?)
 
@@ -156,7 +156,7 @@ class TimelineManager(@Autowired private val database: Database) {
                     val startTime = it[RecordProgresses.startTime]?.asZonedTime(zone)?.toLocalDate()
                     val finishTime = it[RecordProgresses.finishTime]?.asZonedTime(zone)?.toLocalDate()
                     val watchedRecord = it[RecordProgresses.watchedRecord]!!.map { t -> t?.asZonedTime(zone)?.toLocalDate() }
-                    ProgressRow(it[Animations.episodeDuration], it[Comments.score], it[RecordProgresses.ordinal]!!, getTimePointOfProgress(watchedRecord, watchedEpisodes, startTime, finishTime))
+                    ProgressRow(it[Animations.episodeDuration], it[Comments.score], it[RecordProgresses.ordinal]!!, getTimePointOfProgress(watchedRecord, watchedEpisodes, startTime, finishTime), finishTime != null)
                 }
         //基于记录取得离散数据
         val scatterRows = database.from(Animations)
@@ -174,7 +174,7 @@ class TimelineManager(@Autowired private val database: Database) {
                 .groupBy({ it.first }) { it.second }
                 .mapValues { Pair(it.value.size, it.value.filterNotNull().sum()) }
         val secondaryProgressAnimations = progressRows.asSequence()
-                .filter { it.ordinal > 1 && it.timePoint.isNotEmpty() }
+                .filter { it.completed && it.ordinal > 1 && it.timePoint.isNotEmpty() }
                 .groupBy { it.timePoint.last().toDateMonthString() }
                 .mapValues { it.value.count() }
         val firstProgressEpisodesAndDurations = progressRows.asSequence()
@@ -183,11 +183,11 @@ class TimelineManager(@Autowired private val database: Database) {
                 .groupBy({ it.first }) { it.second }
                 .mapValues { Pair(it.value.size, it.value.filterNotNull().sum()) }
         val firstProgressAnimations = progressRows.asSequence()
-                .filter { it.ordinal == 1 && it.timePoint.isNotEmpty() }
+                .filter { it.completed && it.ordinal == 1 && it.timePoint.isNotEmpty() }
                 .groupBy { it.timePoint.last().toDateMonthString() }
                 .mapValues { it.value.count() }
         val firstProgressScores = progressRows.asSequence()
-                .filter { it.ordinal == 1 && it.timePoint.isNotEmpty() && it.score != null }
+                .filter { it.completed && it.ordinal == 1 && it.timePoint.isNotEmpty() && it.score != null }
                 .groupBy { it.timePoint.last().toDateMonthString() }
                 .mapValues { (_, list) ->
                     val scoredAnimations = list.count()

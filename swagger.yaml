@@ -497,8 +497,8 @@ paths:
         - name: ordinal
           in: query
           required: false
-          description: 过滤进度序号，根据选项，仅显示最早进度或最新进度
-          schema: {type: string, enum: ["first", "last"]}
+          description: 过滤进度序号，根据选项，仅显示最早进度、最新进度或仅重看进度
+          schema: {type: string, enum: ["first", "last", "rewatched"]}
       responses:
         200:
           description: OK

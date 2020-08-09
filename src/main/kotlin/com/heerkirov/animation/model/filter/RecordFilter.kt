@@ -13,7 +13,7 @@ data class ActivityFilter(@Limit val limit: Int?,
 data class HistoryFilter(@Limit val limit: Int?,
                          @Offset val offset: Int?,
                          @Search val search: String?,
-                         @Filter("ordinal", options = ["first", "last"]) val ordinal: String?)
+                         @Filter("ordinal", options = ["first", "last", "rewatched"]) val ordinal: String?)
 
 data class FindFilter(@Limit val limit: Int?,
                       @Offset val offset: Int?,
