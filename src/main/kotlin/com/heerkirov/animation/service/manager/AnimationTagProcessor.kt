@@ -50,6 +50,8 @@ class AnimationTagProcessor(@Autowired private val database: Database) {
                     it.animationCount to (it.animationCount minus 1)
                 }
             }
+        }
+        database.batchUpdate(Tags) {
             for (addId in addIds) {
                 item {
                     where { it.id eq addId }
