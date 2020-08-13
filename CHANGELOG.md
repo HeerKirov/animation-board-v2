@@ -1,6 +1,7 @@
 # 0.3.3
 ### Bug Fixes
 * 修复修改动画的标签，同时新增和删除标签时造成的意外错误。
+* 修复一项补充模式创建record的bug，此bug曾导致在给出finish_time时，没有自动设置watched_episodes为最大值。
 
 # 0.3.2
 ### Bug Fixes

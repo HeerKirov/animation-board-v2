@@ -162,7 +162,9 @@ class RecordSetterServiceImpl(@Autowired private val database: Database) : Recor
         val now = DateTimeUtil.now()
 
         //最后一条进度的watchedEpisodes用于推导record的watchedEpisodes
-        val watchedEpisodes = form.progress.last().watchedEpisodes.let {
+        val watchedEpisodes = if(form.progress.last().finishTime != null) {
+            publishedEpisodes
+        } else form.progress.last().watchedEpisodes.let {
             if(it == null || it > publishedEpisodes) {
                 publishedEpisodes
             }else{
