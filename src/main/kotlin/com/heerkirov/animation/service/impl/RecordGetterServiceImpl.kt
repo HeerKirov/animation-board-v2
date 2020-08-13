@@ -333,7 +333,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
             "update_soon" -> {
                 this.map {
                     //将下次更新计划时间转换为它对now的时间差，越早的差越小
-                    Pair(it, if(it.nextPublishPlan != null) Duration.between(it.nextPublishPlan.parseDateTime(), now).toMinutes() else null)
+                    Pair(it, if(it.nextPublishPlan != null) Duration.between(now, it.nextPublishPlan.parseDateTime()).toMinutes() else null)
                 }.sortedWith(Comparator { (a, aDuration), (b, bDuration) ->
                     if(aDuration != null && bDuration != null) {    //a和b都有时间差
                         aDuration.compareTo(bDuration) * direction
