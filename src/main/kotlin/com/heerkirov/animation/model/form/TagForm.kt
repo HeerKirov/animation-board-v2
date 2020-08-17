@@ -9,10 +9,10 @@ data class TagCreateForm(@Field("name") @NotBlank @MaxLength(16) val name: Strin
                          @Field("introduction") val introduction: String,
                          @Field("group") @MaxLength(16) val group: String? = null)
 
-data class TagUpdateForm(@Field("name") @NotBlank @MaxLength(16) val name: String,
-                         @Field("introduction") val introduction: String)
-
 data class TagPartialForm(@Field("name") @NotBlank @MaxLength(16) val name: String? = null,
                           @Field("introduction") val introduction: String? = null,
                           @Field("group") @MaxLength(16) val group: String? = null,
                           @Field("ordinal") @Min(1) val ordinal: Int? = null)
+
+data class GroupPartialForm(@Field("group") @NotBlank @MaxLength(16) val group: String? = null,
+                            @Field("ordinal") @Min(1) val ordinal: Int? = null)

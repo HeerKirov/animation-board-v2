@@ -35,13 +35,6 @@ class TagController(@Autowired private val tagService: TagService) {
     }
 
     @Authorization(staff = true)
-    @PutMapping("/{id}")
-    fun update(@UserIdentity user: User, @PathVariable id: Int, @Body tagForm: TagUpdateForm): TagDetailRes {
-        tagService.update(id, tagForm, user)
-        return tagService.get(id).toDetailRes()
-    }
-
-    @Authorization(staff = true)
     @PatchMapping("/{id}")
     fun partialUpdate(@UserIdentity user: User, @PathVariable id: Int, @Body tagForm: TagPartialForm): TagDetailRes {
         tagService.partialUpdate(id, tagForm, user)
@@ -53,6 +46,18 @@ class TagController(@Autowired private val tagService: TagService) {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Int): Any? {
         tagService.delete(id)
+        return null
+    }
+
+    @GetMapping("/groups")
+    fun groupList(): List<GroupRes> {
+        return tagService.groupList().toGroupRes()
+    }
+
+    @Authorization(staff = true)
+    @PatchMapping("/groups/{group}")
+    fun groupPartialUpdate(@PathVariable group: String, @Body groupForm: GroupPartialForm): Any? {
+        tagService.groupPartialUpdate(group, groupForm)
         return null
     }
 }

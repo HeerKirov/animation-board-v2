@@ -1,6 +1,10 @@
-# 0.3.4
+# 0.4.0
 ### Bug Fixes
 * 修复日记-订阅列表，按update_soon排序时排序顺序反向的问题。
+### Features
+* 增加标签分组的相关专用API，按分类浏览标签，并可控分类顺序和分类命名。
+* tag列表API中，按group排序的选项更改为按group的ordinal顺序排序。
+* 移除tag的PUT update API。
 
 # 0.3.3
 ### Bug Fixes

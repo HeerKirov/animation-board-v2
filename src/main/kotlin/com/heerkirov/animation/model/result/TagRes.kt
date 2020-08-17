@@ -22,3 +22,7 @@ data class TagDetailRes(val id: Int,
                         val updateTime: String)
 
 fun Tag.toDetailRes() = TagDetailRes(id, name, introduction, group, ordinal, animationCount, createTime.toDateTimeString(), updateTime.toDateTimeString())
+
+data class GroupRes(val group: String?, val items: List<TagRes>)
+
+fun List<List<Tag>>.toGroupRes(): List<GroupRes> = this.map { GroupRes(it.first().group, it.map { t -> t.toRes() }) }
