@@ -20,10 +20,9 @@ data class OverviewModal(val totalAnimations: Int,
                          val sexLimitLevelCounts: Map<SexLimitLevel, Int>,
                          val violenceLimitLevelCounts: Map<ViolenceLimitLevel, Int>,
                          val tagCounts: Map<String, Int>,
-                         //可空写法为向下兼容的写法。后续版本可移除。
-                         val sexLimitLevelAvgScores: Map<SexLimitLevel, Double>?,
-                         val violenceLimitLevelAvgScores: Map<ViolenceLimitLevel, Double>?,
-                         val tagAvgScores: Map<String, Double>?)
+                         val sexLimitLevelAvgScores: Map<SexLimitLevel, Double>,
+                         val violenceLimitLevelAvgScores: Map<ViolenceLimitLevel, Double>,
+                         val tagAvgScores: Map<String, Double>)
 
 data class SeasonOverviewModal(val beginYear: Int?, val beginSeason: Int?, val endYear: Int?, val endSeason: Int?)
 
@@ -53,7 +52,9 @@ data class TimelineOverviewModal(val beginYear: Int?, val beginMonth: Int?, val 
 data class TimelineModal(val watchedAnimations: Int, val rewatchedAnimations: Int,
                          val watchedEpisodes: Int, val rewatchedEpisodes: Int, val scatterEpisodes: Int,
                          val watchedDuration: Int, val rewatchedDuration: Int, val scatterDuration: Int,
-                         val scoredAnimations: Int, val maxScore: Int?, val minScore: Int?, val sumScore: Int)
+                         val scoredAnimations: Int, val maxScore: Int?, val minScore: Int?, val sumScore: Int,
+                         //compatible: 后续版本可移除nullable标记
+                         val scoreCounts: Map<Int, Int>?)
 
 data class HistoryLineModal(val beginYear: Int?,
                             val beginSeason: Int?,
@@ -66,7 +67,9 @@ data class HistoryLineModal(val beginYear: Int?,
                     val scoredAnimations: Int,
                     val maxScore: Int?,
                     val minScore: Int?,
-                    val sumScore: Int)
+                    val sumScore: Int,
+                    //compatible: 后续版本可移除nullable标记
+                    val scoreCounts: Map<Int, Int>?)
 }
 
 data class PeriodOverviewModal(val beginYear: Int?, val endYear: Int?)

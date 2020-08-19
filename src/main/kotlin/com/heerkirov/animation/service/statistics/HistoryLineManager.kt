@@ -55,7 +55,10 @@ class HistoryLineManager(@Autowired private val database: Database) {
                     val minScore = items.asSequence().map { it.minScore }.filterNotNull().min()
                     val sumScore = items.asSequence().map { it.sumScore }.sum()
                     val avgScore = if(scoredAnimations == 0) null else { sumScore * 1.0 / scoredAnimations }
-                    HistoryLineRes.Item(time, totalAnimations, maxScore, minScore, avgScore)
+                    val scoreCounts = items.flatMap { it.scoreCounts?.toList() ?: emptyList() }
+                            .groupBy({ it.first }) { it.second }
+                            .mapValues { (_, v) -> v.sum() }
+                    HistoryLineRes.Item(time, totalAnimations, maxScore, minScore, avgScore, scoreCounts)
                 }
                 .sortedBy { it.time }
                 .toList()
@@ -102,7 +105,8 @@ class HistoryLineManager(@Autowired private val database: Database) {
                     val maxScore = scoredItems.max()
                     val minScore = scoredItems.min()
                     val sumScore = scoredItems.sum()
-                    HistoryLineModal.Item(pair.first, pair.second, items.size, scoredItems.size, maxScore, minScore, sumScore)
+                    val scoreCounts = scoredItems.groupingBy { it }.eachCount()
+                    HistoryLineModal.Item(pair.first, pair.second, items.size, scoredItems.size, maxScore, minScore, sumScore, scoreCounts)
                 }
 
         val (beginYear, beginSeason) = rowSets.keys.minBy { compValue(it.first, it.second) } ?: Pair(null, null)
@@ -110,7 +114,7 @@ class HistoryLineManager(@Autowired private val database: Database) {
         if(beginYear != null && beginSeason != null && endYear != null && endSeason != null) {
             val items = stepFor(compValue(beginYear, beginSeason), compValue(endYear, endSeason)) { it + 1 }.asSequence()
                     .map { Pair(it / 4, it % 4 + 1) }
-                    .map { rowSets[it] ?: HistoryLineModal.Item(it.first, it.second, 0, 0, null, null, 0) }
+                    .map { rowSets[it] ?: HistoryLineModal.Item(it.first, it.second, 0, 0, null, null, 0, emptyMap()) }
                     .toList()
 
             return HistoryLineModal(beginYear, beginSeason, endYear, endSeason, items)

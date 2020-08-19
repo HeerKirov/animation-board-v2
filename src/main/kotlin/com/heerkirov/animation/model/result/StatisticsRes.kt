@@ -29,7 +29,7 @@ fun OverviewModal.toResWith(updateTime: LocalDateTime): OverviewRes {
     return OverviewRes(totalAnimations, totalEpisodes, totalDuration, avgScore,
             scoreCounts, originalWorkTypeCounts, publishTypeCounts,
             sexLimitLevelCounts, violenceLimitLevelCounts, tagCounts,
-            sexLimitLevelAvgScores ?: emptyMap(), violenceLimitLevelAvgScores ?: emptyMap(), tagAvgScores ?: emptyMap(),
+            sexLimitLevelAvgScores, violenceLimitLevelAvgScores, tagAvgScores,
             updateTime.toDateTimeString())
 }
 
@@ -101,7 +101,8 @@ data class TimelineRes(@JsonProperty("items") val items: List<Item>,
                     @JsonProperty("scatter_duration") val scatterDuration: Int,
                     @JsonProperty("max_score") val maxScore: Int?,
                     @JsonProperty("min_score") val minScore: Int?,
-                    @JsonProperty("avg_score") val avgScore: Double?)
+                    @JsonProperty("avg_score") val avgScore: Double?,
+                    @JsonProperty("score_counts") val scoreCounts: Map<Int, Int>)
 }
 
 data class HistoryLineRes(@JsonProperty("items") val items: List<Item>,
@@ -110,7 +111,8 @@ data class HistoryLineRes(@JsonProperty("items") val items: List<Item>,
                     @JsonProperty("total_animations") val totalAnimations: Int,
                     @JsonProperty("max_score") val maxScore: Int?,
                     @JsonProperty("min_score") val minScore: Int?,
-                    @JsonProperty("avg_score") val avgScore: Double?)
+                    @JsonProperty("avg_score") val avgScore: Double?,
+                    @JsonProperty("score_counts") val scoreCounts: Map<Int, Int>)
 }
 
 data class PeriodOverviewRes(@JsonProperty("begin_year") val beginYear: Int?,

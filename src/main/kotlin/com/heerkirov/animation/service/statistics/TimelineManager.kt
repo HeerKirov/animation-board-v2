@@ -39,7 +39,7 @@ class TimelineManager(@Autowired private val database: Database) {
 
         val updateTime = data.asSequence().map { it.updateTime }.max()?.toDateTimeString()
 
-        val items = data.asSequence()
+        val items = data
                 .groupBy {
                     when(aggregateTimeUnit) {
                         AggregateTimeUnit.MONTH -> it.key!!
@@ -64,7 +64,10 @@ class TimelineManager(@Autowired private val database: Database) {
                                 if(scoredAnimations == 0) null else {
                                     modals.sumBy { it.sumScore } * 1.0 / scoredAnimations
                                 }
-                            }
+                            },
+                            modals.flatMap { it.scoreCounts?.toList() ?: emptyList() }
+                                    .groupBy({ it.first }) { it.second }
+                                    .mapValues { (_, v) -> v.sum() }
                     )
                 }
 
@@ -141,7 +144,7 @@ class TimelineManager(@Autowired private val database: Database) {
     fun generate(user: User): Map<String, TimelineModal> {
         data class ProgressRow(val episodeDuration: Int?, val score: Int?, val ordinal: Int, val timePoint: List<LocalDate>, val completed: Boolean)
         data class ScatterRow(val episodeDuration: Int?, val scatterRecord: List<LocalDate>)
-        data class ScoredRow(val scoredAnimations: Int, val sumScore: Int, val maxScore: Int?, val minScore: Int?)
+        data class ScoredRow(val scoredAnimations: Int, val sumScore: Int, val maxScore: Int?, val minScore: Int?, val scoreCounts: Map<Int, Int>)
 
         val zone = ZoneId.of(user.setting.timezone)
 
@@ -194,7 +197,8 @@ class TimelineManager(@Autowired private val database: Database) {
                     val maxScore = list.maxBy { it.score!! }?.score
                     val minScore = list.minBy { it.score!! }?.score
                     val sumScore = list.sumBy { it.score!! }
-                    ScoredRow(scoredAnimations, sumScore, maxScore, minScore)
+                    val scoreCounts = list.groupingBy { it.score!! }.eachCount()
+                    ScoredRow(scoredAnimations, sumScore, maxScore, minScore, scoreCounts)
                 }
 
         //三个条件都取到了各自的最大覆盖范围，因此只需这三个就能得到全部key
@@ -213,14 +217,14 @@ class TimelineManager(@Autowired private val database: Database) {
                     secondaryProgressAnimations[it] ?: 0,
                     watchedEpisodes, rewatchedEpisodes, scatterEpisodes,
                     watchedDuration, rewatchedDuration, scatterDuration,
-                    scored?.scoredAnimations ?: 0, scored?.maxScore, scored?.minScore, scored?.sumScore ?: 0
+                    scored?.scoredAnimations ?: 0, scored?.maxScore, scored?.minScore, scored?.sumScore ?: 0, scored?.scoreCounts ?: emptyMap()
             )
         }
 
         //迭代从最小值到最大值的全部时间点，防止无数据的时间点被遗漏
         return stepFor(keys.min()!!.parseDateMonth()!!, keys.max()!!.parseDateMonth()!!) { it.plusMonths(1) }.asSequence()
                 .map { it.toDateMonthString() }
-                .map { Pair(it, keyValues[it] ?: TimelineModal(0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, 0)) }
+                .map { Pair(it, keyValues[it] ?: TimelineModal(0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, 0, emptyMap())) }
                 .toMap()
     }
 }

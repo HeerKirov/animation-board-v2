@@ -2,6 +2,7 @@
 ### Bug Fixes
 * 修复日记-订阅列表，按update_soon排序时排序顺序反向的问题。
 ### Features
+* 时间线和历史线中，新增每个时间段内，首次看完动画的评分数量分布。
 * 增加标签分组的相关专用API，按分类浏览标签，并可控分类顺序和分类命名。
 * tag列表API中，按group排序的选项更改为按group的ordinal顺序排序。
 * 移除tag的PUT update API。
