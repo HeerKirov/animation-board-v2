@@ -110,30 +110,55 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
                 throw BadRequestException(ErrCode.ALREADY_EXISTS, "Tag with name '${tagForm.name}' is already exists.")
             }
         }
+        val tag = database.sequenceOf(Tags).find { it.id eq id } ?: throw NotFoundException("Tag not found.")
 
-        //TODO 重构group的更新相关代码。group一旦更新，ordinal必须变更
-        val newGroup = if(tagForm.group.isNullOrBlank()) null else {
-
-            tagForm.group
-        }
-
-        val newOrdinal = if(tagForm.ordinal == null) null else {
-            val tag = database.sequenceOf(Tags).find { it.id eq id } ?: throw NotFoundException("Tag not found.")
-            if(tagForm.ordinal > tag.ordinal) {
-                database.update(Tags) {
-                    where { if(tag.group != null) { it.group eq tag.group }else{ it.group.isNull() } and (it.ordinal greater tag.ordinal) and (it.ordinal lessEq tagForm.ordinal) }
-                    it.ordinal to (it.ordinal - 1)
+        val (newGroup, newOrdinal) = if(tagForm.group.isNullOrBlank() || tagForm.group == tag.group) {
+            //group没有变化，那么只在当前group的范围内做ordinal的变动
+            Pair(null, if(tagForm.ordinal == null || tagForm.ordinal == tag.ordinal) null else {
+                //ordinal发生了变动
+                val max = getTagCount(tag.group)
+                val newOrdinal = if(tagForm.ordinal > max) max else tagForm.ordinal
+                if(newOrdinal > tag.ordinal) {
+                    database.update(Tags) {
+                        where { if(tag.group != null) { it.group eq tag.group }else{ it.group.isNull() } and (it.ordinal greater tag.ordinal) and (it.ordinal lessEq newOrdinal) }
+                        it.ordinal to (it.ordinal - 1)
+                    }
+                }else{
+                    database.update(Tags) {
+                        where { if(tag.group != null) { it.group eq tag.group }else{ it.group.isNull() } and (it.ordinal greaterEq newOrdinal) and (it.ordinal less tag.ordinal) }
+                        it.ordinal to (it.ordinal + 1)
+                    }
                 }
-                val tagCount = getTagCount(tag.group)
-                if(tagForm.ordinal > tagCount) tagCount else tagForm.ordinal
-            }else if(tagForm.ordinal < tag.ordinal) {
+                newOrdinal
+            })
+        }else{
+            //group发生变化
+            //如果group不存在则创建
+            if(database.sequenceOf(TagGroups).find { it.group eq tagForm.group } == null) {
+                database.insert(TagGroups) {
+                    it.group to tagForm.group
+                    it.ordinal to (getGroupCount() + 1)
+                }
+            }
+            //重排旧的group的ordinal
+            database.update(Tags) {
+                where { if (tag.group != null) { it.group eq tag.group }else{ it.group.isNull() } and (it.ordinal greater tag.ordinal) }
+                it.ordinal to (it.ordinal - 1)
+            }
+            //将tag插入新的group中
+            Pair(tagForm.group, if(tagForm.ordinal == null) {
+                //没有指定ordinal，那么追加到新group的末尾
+                getTagCount(tagForm.group) + 1
+            }else{
+                //指定了ordinal，那么将其插入
+                val max = getTagCount(tagForm.group) + 1
+                val newOrdinal = if(tagForm.ordinal > max) max else tagForm.ordinal
                 database.update(Tags) {
-                    where { if(tag.group != null) { it.group eq tag.group }else{ it.group.isNull() } and (it.ordinal greaterEq tagForm.ordinal) and (it.ordinal less tag.ordinal) }
+                    where { (it.group eq tagForm.group) and (it.ordinal greaterEq newOrdinal) }
                     it.ordinal to (it.ordinal + 1)
                 }
-                val tagCount = getTagCount(tag.group)
-                if(tagForm.ordinal > tagCount) tagCount else tagForm.ordinal
-            }else null
+                newOrdinal
+            })
         }
 
         if(database.update(Tags) {
@@ -158,6 +183,9 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
         val tagGroup = database.sequenceOf(TagGroups).find { it.group eq group } ?: throw NotFoundException("TagGroup not found.")
 
         val newGroup = if(form.group.isNullOrBlank() || form.group == group) null else {
+            database.sequenceOf(TagGroups).find { (it.group eq form.group) }?.run {
+                throw BadRequestException(ErrCode.ALREADY_EXISTS, "TagGroup with name '${form.group}' is already exists.")
+            }
             database.update(Tags) {
                 where { it.group eq group }
                 it.group to form.group

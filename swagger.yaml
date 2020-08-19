@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   title: Animation Board v2
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Animation Board的v2版本。
     这是一个Basic Service下属的应用，使用BS提供的用户认证服务。有关BS的使用，见[Basic Service REST API](http://www.heerkirov.com/swagger/?url=/swagger/docs/basic-service.yaml)。
@@ -206,7 +206,7 @@ paths:
           description: 排序。使用逗号(`,`)组合排序，使用减号(`-`)降序排序
           schema:
             type: string
-            enum: [name, create_time, update_time]
+            enum: [name, group, ordinal, animation_count, create_time, update_time]
       responses:
         200:
           description: OK
@@ -254,30 +254,6 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/TagDetailRes'}
-    put:
-      summary: 更新标签内容
-      tags: [Tag]
-      parameters:
-        - $ref: '#/components/parameters/TagId'
-      requestBody:
-        content:
-          application/json:
-            schema: {$ref: '#/components/schemas/TagUpdateForm'}
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/TagDetailRes'}
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/ErrResult'
-                  - description: |
-                      * `ALREADY_EXISTS` - 此name的tag已经存在
     patch:
       summary: 部分更新标签内容
       tags: [Tag]
@@ -310,6 +286,49 @@ paths:
       responses:
         204:
           description: No Content
+  /api/database/tags/groups:
+    get:
+      summary: 查看标签分组列表
+      description: 查看按照group分组的标签组。所有分组按照分组ordinal排序，无分组部分总是排在最后；分组内按照标签ordinal排序。
+      tags: [Tag]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    group:
+                      type: string
+                      description: 分组名称
+                    items:
+                        type: array
+                        items: {$ref: '#/components/schemas/TagRes'}
+  /api/database/tags/groups/{group}:
+    patch:
+      summary: 部分更改分组内容
+      tags: [Tag]
+      parameters:
+        - $ref: '#/components/parameters/GroupName'
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GroupPartialForm'}
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrResult'
+                  - description: |
+                      * `ALREADY_EXISTS` - 此name的group已经存在
   /api/database/staffs:
     get:
       summary: 查看相关人员列表
@@ -331,7 +350,7 @@ paths:
           description: 排序。使用逗号(`,`)组合排序，使用减号(`-`)降序排序
           schema:
             type: string
-            enum: [name, create_time, update_time]
+            enum: [name, animation_count, create_time, update_time]
       responses:
         200:
           description: OK
@@ -1342,6 +1361,12 @@ components:
       required: true
       description: staff id
       schema: {type: integer}
+    GroupName:
+      name: group
+      in: path
+      required: true
+      description: 分组名称
+      schema: {type: string}
   schemas:
     AnimationForm:
       allOf:
@@ -1478,7 +1503,19 @@ components:
         ordinal:
           type: integer
           minimum: 1
-          description: 标签自定义排序序号
+          description: 标签在分组中的自定义排序序号
+    GroupPartialForm:
+      type: object
+      properties:
+        group:
+          type: string
+          maxLength: 16
+          uniqueItems: true
+          description: 重命名分组为新的名称
+        ordinal:
+          type: integer
+          minimum: 1
+          description: 此分组在分组序列中的排序
     StaffForm:
       type: object
       required: [name, is_organization]
