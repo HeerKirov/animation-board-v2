@@ -1,5 +1,6 @@
 package com.heerkirov.animation.model.data
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.heerkirov.animation.enums.*
 import java.time.LocalDateTime
 
@@ -49,11 +50,14 @@ data class SeasonModal(val totalAnimations: Int,
 
 data class TimelineOverviewModal(val beginYear: Int?, val beginMonth: Int?, val endYear: Int?, val endMonth: Int?)
 
-data class TimelineModal(val watchedAnimations: Int, val rewatchedAnimations: Int,
-                         val watchedEpisodes: Int, val rewatchedEpisodes: Int, val scatterEpisodes: Int,
-                         val watchedDuration: Int, val rewatchedDuration: Int, val scatterDuration: Int,
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class TimelineModal(/*compatible: 后续版本可移除nullable标记*/
+                         val chaseAnimations: Int?, val chaseEpisodes: Int?, val chaseDuration: Int?,
+                         val supplementAnimations: Int?, val supplementEpisodes: Int?, val supplementDuration: Int?,
+                         val rewatchedAnimations: Int, val rewatchedEpisodes: Int, val rewatchedDuration: Int,
+                         val scatterEpisodes: Int, val scatterDuration: Int,
                          val scoredAnimations: Int, val maxScore: Int?, val minScore: Int?, val sumScore: Int,
-                         //compatible: 后续版本可移除nullable标记
+                         /*compatible: 后续版本可移除nullable标记*/
                          val scoreCounts: Map<Int, Int>?)
 
 data class HistoryLineModal(val beginYear: Int?,
@@ -61,9 +65,12 @@ data class HistoryLineModal(val beginYear: Int?,
                             val endYear: Int?,
                             val endSeason: Int?,
                             val items: List<Item>) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class Item(val year: Int,
                     val season: Int,
-                    val totalAnimations: Int,
+                    /*compatible: 后续版本可移除nullable标记*/
+                    val chaseAnimations: Int?,
+                    val supplementAnimations: Int?,
                     val scoredAnimations: Int,
                     val maxScore: Int?,
                     val minScore: Int?,

@@ -4,34 +4,25 @@ import com.heerkirov.animation.dao.Animations
 import com.heerkirov.animation.dao.RecordProgresses
 import com.heerkirov.animation.dao.Records
 import com.heerkirov.animation.enums.ErrCode
-import com.heerkirov.animation.enums.RecordStatus
 import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.exception.NotFoundException
 import com.heerkirov.animation.model.data.User
-import com.heerkirov.animation.model.filter.ActivityFilter
-import com.heerkirov.animation.model.filter.DiaryFilter
-import com.heerkirov.animation.model.filter.FindFilter
-import com.heerkirov.animation.model.filter.HistoryFilter
+import com.heerkirov.animation.model.filter.*
 import com.heerkirov.animation.model.result.*
 import com.heerkirov.animation.service.RecordGetterService
 import com.heerkirov.animation.service.manager.RecordProcessor
 import com.heerkirov.animation.util.*
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.Tuple4
 import me.liuwj.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.time.Duration
+import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.temporal.ChronoField
 
 @Service
 class RecordGetterServiceImpl(@Autowired private val database: Database,
                               @Autowired private val recordProcessor: RecordProcessor) : RecordGetterService {
-    private val nightTimeTableHourOffset = 2L   //夜晚时间表将0点之后2个小时内的时间视作今天
-    private val weekDurationAvailable = 2       //距今天差2周以内的被放入周历表排序
-
     private val findOrderTranslator = OrderTranslator {
         "create_time" to Animations.createTime
         "update_time" to Animations.updateTime
@@ -80,7 +71,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                         recordProcessor.getStatus(it[Records.progressCount]!!, it[Animations.totalEpisodes]!!, it[RecordProgresses.watchedEpisodes]),
                         (it[RecordProgresses.startTime] ?: it[Records.createTime]!!).toDateTimeString()
                 ) }
-                .sortDiary(direction, order, nightTimeTable, zone)
+                .let { recordProcessor.sortDiary(it, direction, order, nightTimeTable, zone) }
                 .toList()
 
         return DiaryResult(items, nightTimeTable)
@@ -109,7 +100,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                     it.nextPublishTime
                             .parseDateTime()
                             .asZonedTime(zone)
-                            .runIf(nightTimeTable) { t -> t.minusHours(nightTimeTableHourOffset) }
+                            .runIf(nightTimeTable) { t -> t.minusHours(recordProcessor.nightTimeTableHourOffset) }
                             .dayOfWeek.value
                 }
 
@@ -170,6 +161,38 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                         it[RecordProgresses.finishTime]!!.toDateTimeString(),
                         it[RecordProgresses.ordinal]!!
                 ) }
+    }
+
+    override fun scale(filter: ScaleFilter, user: User): List<ScaleRes> {
+        val lower = filter.lower ?: throw BadRequestException(ErrCode.PARAM_REQUIRED, "Query 'lower' is required.")
+        val upper = filter.upper ?: throw BadRequestException(ErrCode.PARAM_REQUIRED, "Query 'upper' is required.")
+
+        data class Row(val id: Int, val title: String, val cover: String?, val ordinal: Int, val start: LocalDateTime, val end: LocalDateTime, val finished: Boolean)
+
+        return database.from(RecordProgresses)
+                .innerJoin(Records, (Records.id eq RecordProgresses.recordId) and (Records.ownerId eq user.id))
+                .innerJoin(Animations, Animations.id eq Records.animationId)
+                .select(Animations.id, Animations.title, Animations.cover, RecordProgresses.ordinal, RecordProgresses.startTime, RecordProgresses.finishTime, RecordProgresses.watchedRecord)
+                .whereWithConditions {
+                    //由于startTime/finishTime并不能用作最终范围，因此在where条件中仅做一次粗筛
+                    it += RecordProgresses.finishTime.isNull() or (RecordProgresses.finishTime greaterEq lower)
+                    it += RecordProgresses.startTime.isNull() or (RecordProgresses.startTime lessEq upper)
+                }.asSequence()
+                .map { row ->
+                    val watchedRecord = row[RecordProgresses.watchedRecord]!!
+                    val startTime = row[RecordProgresses.startTime]
+                    val finishTime = row[RecordProgresses.finishTime]
+
+                    val start = startTime ?: watchedRecord.firstOrNull { it != null } ?: finishTime
+                    val end = finishTime ?: watchedRecord.lastOrNull { it != null } ?: startTime
+                    if (start == null || end == null) null else {
+                        Row(row[Animations.id]!!, row[Animations.title]!!, row[Animations.cover], row[RecordProgresses.ordinal]!!, start, end, finishTime != null)
+                    }
+                }.filterNotNull()
+                .filter { it.start <= upper && it.end >= lower }
+                .sortedBy { it.start }
+                .map { ScaleRes(it.id, it.title, it.cover, it.ordinal, it.start.toDateTimeString(), it.end.toDateTimeString(), it.finished) }
+                .toList()
     }
 
     override fun find(filter: FindFilter, user: User): ListResult<FindRes> {
@@ -284,76 +307,5 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                         it[RecordProgresses.watchedEpisodes]!!,
                         recordProcessor.calculateProgress(it[Records.progressCount]!!, it[Animations.totalEpisodes]!!, it[RecordProgresses.watchedEpisodes]!!)
                 ) }
-    }
-
-    private fun Sequence<DiaryItem>.sortDiary(direction: Int, order: String, nightTimeTable: Boolean, timezone: ZoneId): Sequence<DiaryItem> {
-        val now = DateTimeUtil.now()
-        return when(order) {
-            "weekly_calendar" -> {
-                val zonedNow = now.asZonedTime(timezone)
-                this.map {
-                    //将next publish plan拆解成几项参数: 完整时间, 周数差，周内时间
-                    if(it.nextPublishPlan != null) {
-                        val datetime = it.nextPublishPlan
-                                .parseDateTime()
-                                .asZonedTime(timezone)
-                                .runIf(nightTimeTable) { t -> t.minusHours(nightTimeTableHourOffset) }
-                        val weekDuration = weekDuration(zonedNow, datetime)
-                        val weekday = datetime.dayOfWeek.value
-                        val minute = datetime.getLong(ChronoField.MINUTE_OF_DAY)
-                        val timeInWeek = weekday * 60 * 24 + minute
-                        Tuple4(it, datetime, weekDuration, timeInWeek)
-                    }else{
-                        Tuple4(it, null, 0, 0L)
-                    }
-                }.sortedWith(Comparator { (a, aTime, aWeekDuration, aMinute), (b, bTime, bWeekDuration, bMinute) ->
-                    if(aTime != null && bTime != null) { //都有更新计划
-                        if(aWeekDuration <= weekDurationAvailable && bWeekDuration <= weekDurationAvailable) {  //都在最近2周以内
-                            if(aMinute != bMinute) {    //按周内时间排序
-                                aMinute.compareTo(bMinute) * direction
-                            }else{  //最后按id排序
-                                a.animationId.compareTo(b.animationId) * direction
-                            }
-                        }else if(aWeekDuration > weekDurationAvailable && aWeekDuration > weekDurationAvailable) {  //都在最近两周以外
-                            aTime.compareTo(bTime) * direction   //按完整时间排序
-                        }else if(aWeekDuration <= weekDurationAvailable) { -direction }else{ direction } //a在以内，那么a优先，且降序时反转
-                    }else if(aTime == null && bTime == null) { //都没有更新计划
-                        val aWatched = a.watchedEpisodes ?: 0
-                        val bWatched = b.watchedEpisodes ?: 0
-                        if(aWatched < a.publishedEpisodes && bWatched < b.publishedEpisodes) {    //都有存货
-                            a.subscriptionTime.compareTo(b.subscriptionTime) //按订阅时间排序。UTC时间戳可以直接这么比
-                        }else if(a.watchedEpisodes ?: 0 >= a.publishedEpisodes && b.watchedEpisodes ?: 0 >= b.publishedEpisodes) {    //都没有存货
-                            if(!((a.status == RecordStatus.COMPLETED) xor (b.status == RecordStatus.COMPLETED))) {  //都已完结或都未完结
-                                a.animationId.compareTo(b.animationId)  //按id排序
-                            }else if(a.status == RecordStatus.COMPLETED) { -1 }else{ 1 }    //a已完结，那么不论direction总是优先，否则就是b优先
-                        }else if(a.watchedEpisodes ?: 0 < a.publishedEpisodes) { -1 }else{ 1 }   //a有存货，那么不论direction总是优先，否则就是b优先
-                    }else if(aTime != null) { -1 }else{ 1 } //a有更新计划，那么不论direction总是优先，否则就是b优先
-                }).map { it.element1 }
-            }
-            "update_soon" -> {
-                this.map {
-                    //将下次更新计划时间转换为它对now的时间差，越早的差越小
-                    Pair(it, if(it.nextPublishPlan != null) Duration.between(now, it.nextPublishPlan.parseDateTime()).toMinutes() else null)
-                }.sortedWith(Comparator { (a, aDuration), (b, bDuration) ->
-                    if(aDuration != null && bDuration != null) {    //a和b都有时间差
-                        aDuration.compareTo(bDuration) * direction
-                    }else if(aDuration == null && bDuration == null) {  //a和b都没有时间差
-                        val aWatched = a.watchedEpisodes ?: 0
-                        val bWatched = b.watchedEpisodes ?: 0
-                        if(aWatched < a.publishedEpisodes && bWatched < b.publishedEpisodes) {    //都有存货
-                            a.subscriptionTime.compareTo(b.subscriptionTime) //按订阅时间排序。UTC时间戳可以直接这么比
-                        }else if(a.watchedEpisodes ?: 0 >= a.publishedEpisodes && b.watchedEpisodes ?: 0 >= b.publishedEpisodes) {    //都没有存货
-                            if(!((a.status == RecordStatus.COMPLETED) xor (b.status == RecordStatus.COMPLETED))) {  //都已完结或都未完结
-                                a.animationId.compareTo(b.animationId)  //按id排序
-                            }else if(a.status == RecordStatus.COMPLETED) { -1 }else{ 1 }    //a已完结，那么不论direction总是优先，否则就是b优先
-                        }else if(a.watchedEpisodes ?: 0 < a.publishedEpisodes) { -1 }else{ 1 }   //a有存货，那么不论direction总是优先，否则就是b优先
-                    }else if(aDuration != null) { -1 }else{ 1 } //a有时间差，那么不论direction总是a优先
-                }).map { it.first }
-            }
-            "subscription_time" -> {
-                this.map { Pair(it, it.subscriptionTime.parseDateTime()) }.sortedBy { it.second }.map { it.first }
-            }
-            else -> throw UnsupportedOperationException()
-        }
     }
 }

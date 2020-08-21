@@ -5,10 +5,7 @@ import com.heerkirov.animation.aspect.authorization.UserIdentity
 import com.heerkirov.animation.aspect.filter.Query
 import com.heerkirov.animation.aspect.validation.Body
 import com.heerkirov.animation.model.data.User
-import com.heerkirov.animation.model.filter.ActivityFilter
-import com.heerkirov.animation.model.filter.DiaryFilter
-import com.heerkirov.animation.model.filter.FindFilter
-import com.heerkirov.animation.model.filter.HistoryFilter
+import com.heerkirov.animation.model.filter.*
 import com.heerkirov.animation.model.form.*
 import com.heerkirov.animation.model.result.*
 import com.heerkirov.animation.service.RecordGetterService
@@ -48,6 +45,12 @@ class RecordController(@Autowired private val recordGetterService: RecordGetterS
     @GetMapping("/history")
     fun history(@UserIdentity user: User, @Query filter: HistoryFilter): ListResult<HistoryRes> {
         return recordGetterService.history(filter, user)
+    }
+
+    @Authorization
+    @GetMapping("/scale")
+    fun scale(@UserIdentity user: User, @Query filter: ScaleFilter): List<ScaleRes> {
+        return recordGetterService.scale(filter, user)
     }
 
     @Authorization

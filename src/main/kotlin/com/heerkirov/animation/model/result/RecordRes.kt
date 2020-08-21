@@ -41,6 +41,14 @@ data class HistoryRes(@JsonProperty("animation_id") val animationId: Int,
                       @JsonProperty("finish_time") val finishTime: String,
                       @JsonProperty("ordinal") val ordinal: Int)
 
+data class ScaleRes(@JsonProperty("animation_id") val animationId: Int,
+                    @JsonProperty("title") val title: String,
+                    @JsonProperty("cover") val cover: String?,
+                    @JsonProperty("ordinal") val ordinal: Int,
+                    @JsonProperty("start") val start: String,
+                    @JsonProperty("end") val end: String,
+                    @JsonProperty("finished") val finished: Boolean)
+
 data class FindRes(@JsonProperty("animation_id") val animationId: Int,
                    @JsonProperty("title") val title: String,
                    @JsonProperty("cover") val cover: String?,

@@ -1,6 +1,7 @@
 package com.heerkirov.animation.model.filter
 
 import com.heerkirov.animation.aspect.filter.*
+import java.time.LocalDateTime
 
 data class DiaryFilter(@Search val search: String?,
                        @Filter("filter", options = ["active", "watchable", "updating", "completed", "shelve"]) val filter: String?,
@@ -14,6 +15,9 @@ data class HistoryFilter(@Limit val limit: Int?,
                          @Offset val offset: Int?,
                          @Search val search: String?,
                          @Filter("ordinal", options = ["first", "last", "rewatched"]) val ordinal: String?)
+
+data class ScaleFilter(@Filter("lower") val lower: LocalDateTime?,
+                       @Filter("upper") val upper: LocalDateTime?)
 
 data class FindFilter(@Limit val limit: Int?,
                       @Offset val offset: Int?,

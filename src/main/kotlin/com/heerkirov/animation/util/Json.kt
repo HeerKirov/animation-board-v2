@@ -1,11 +1,12 @@
 package com.heerkirov.animation.util
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import me.liuwj.ktorm.schema.TypeReference
 
-private val objectMapper = jacksonObjectMapper()
+private val objectMapper = jacksonObjectMapper().configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
 
 fun objectMapper(): ObjectMapper = objectMapper
 

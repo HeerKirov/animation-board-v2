@@ -2,6 +2,7 @@ package com.heerkirov.animation.service.statistics
 
 import com.heerkirov.animation.dao.*
 import com.heerkirov.animation.enums.AggregateTimeUnit
+import com.heerkirov.animation.enums.PublishType
 import com.heerkirov.animation.enums.StatisticType
 import com.heerkirov.animation.model.data.TimelineModal
 import com.heerkirov.animation.model.data.TimelineOverviewModal
@@ -50,13 +51,16 @@ class TimelineManager(@Autowired private val database: Database) {
                     val modals = statistics.map { it.content.parseJSONObject<TimelineModal>() }
 
                     TimelineRes.Item(time,
-                            modals.sumBy { it.watchedAnimations },
+                            modals.sumBy { it.chaseAnimations ?: 0 },
+                            modals.sumBy { it.chaseEpisodes ?: 0 },
+                            modals.sumBy { it.chaseDuration ?: 0 },
+                            modals.sumBy { it.supplementAnimations ?: 0 },
+                            modals.sumBy { it.supplementEpisodes ?: 0 },
+                            modals.sumBy { it.supplementDuration ?: 0 },
                             modals.sumBy { it.rewatchedAnimations },
-                            modals.sumBy { it.watchedEpisodes },
                             modals.sumBy { it.rewatchedEpisodes },
-                            modals.sumBy { it.scatterEpisodes },
-                            modals.sumBy { it.watchedDuration },
                             modals.sumBy { it.rewatchedDuration },
+                            modals.sumBy { it.scatterEpisodes },
                             modals.sumBy { it.scatterDuration },
                             modals.asSequence().map { it.maxScore }.filterNotNull().max(),
                             modals.asSequence().map { it.minScore }.filterNotNull().min(),
@@ -142,7 +146,7 @@ class TimelineManager(@Autowired private val database: Database) {
     }
 
     fun generate(user: User): Map<String, TimelineModal> {
-        data class ProgressRow(val episodeDuration: Int?, val score: Int?, val ordinal: Int, val timePoint: List<LocalDate>, val completed: Boolean)
+        data class ProgressRow(val episodeDuration: Int?, val score: Int?, val ordinal: Int, val timePoint: List<LocalDate>, val completed: Boolean, val chase: Boolean)
         data class ScatterRow(val episodeDuration: Int?, val scatterRecord: List<LocalDate>)
         data class ScoredRow(val scoredAnimations: Int, val sumScore: Int, val maxScore: Int?, val minScore: Int?, val scoreCounts: Map<Int, Int>)
 
@@ -153,14 +157,25 @@ class TimelineManager(@Autowired private val database: Database) {
                 .innerJoin(Records, (Records.animationId eq Animations.id) and (Records.ownerId eq user.id))
                 .innerJoin(RecordProgresses, (RecordProgresses.recordId eq Records.id))
                 .leftJoin(Comments, (Comments.animationId eq Animations.id) and (Comments.ownerId eq user.id) and (Comments.score.isNotNull()))
-                .select(Animations.episodeDuration, Comments.score, RecordProgresses.ordinal, RecordProgresses.watchedRecord, RecordProgresses.watchedEpisodes, RecordProgresses.startTime, RecordProgresses.finishTime)
+                .select(Animations.episodeDuration, Animations.publishTime, Animations.publishType,
+                        Comments.score, RecordProgresses.ordinal, RecordProgresses.watchedRecord,
+                        RecordProgresses.watchedEpisodes, RecordProgresses.startTime, RecordProgresses.finishTime)
                 .map {
+                    val ordinal = it[RecordProgresses.ordinal]!!
                     val watchedEpisodes = it[RecordProgresses.watchedEpisodes]!!
                     val startTime = it[RecordProgresses.startTime]?.asZonedTime(zone)?.toLocalDate()
                     val finishTime = it[RecordProgresses.finishTime]?.asZonedTime(zone)?.toLocalDate()
                     val watchedRecord = it[RecordProgresses.watchedRecord]!!.map { t -> t?.asZonedTime(zone)?.toLocalDate() }
-                    ProgressRow(it[Animations.episodeDuration], it[Comments.score], it[RecordProgresses.ordinal]!!, getTimePointOfProgress(watchedRecord, watchedEpisodes, startTime, finishTime), finishTime != null)
+                    val publishType = it[Animations.publishType]
+                    //由于startTime已经在时区转换后做了脱区处理，比较的只是Date部分，不需要再处理了
+                    val maxChaseTime = it[Animations.publishTime]?.let { d -> LocalDate.of(d.year, (d.monthValue - 1) / 3 * 3 + 1, 1).plusMonths(3) }
+
+                    ProgressRow(it[Animations.episodeDuration], it[Comments.score], ordinal,
+                            getTimePointOfProgress(watchedRecord, watchedEpisodes, startTime, finishTime), finishTime != null,
+                            //区分追番进度的条件为"进度序号为1"、"放送类型为TV&WEB"、"用户订阅时间在当季(取发布时间所在季度的3个月)三个月内或更早"。
+                            ordinal == 1 && publishType == PublishType.TV_AND_WEB && startTime != null && maxChaseTime != null && startTime < maxChaseTime)
                 }
+
         //基于记录取得离散数据
         val scatterRows = database.from(Animations)
                 .innerJoin(Records, (Records.animationId eq Animations.id) and (Records.ownerId eq user.id))
@@ -171,6 +186,7 @@ class TimelineManager(@Autowired private val database: Database) {
                 .flatMap { it.scatterRecord.asSequence().map { r -> Pair(r.toDateMonthString(), it.episodeDuration) } }
                 .groupBy({ it.first }) { it.second }
                 .mapValues { Pair(it.value.size, it.value.filterNotNull().sum()) }
+
         val secondaryProgressEpisodesAndDurations = progressRows.asSequence()
                 .filter { it.ordinal > 1 }
                 .flatMap { it.timePoint.asSequence().map { r -> Pair(r.toDateMonthString(), it.episodeDuration) } }
@@ -180,15 +196,27 @@ class TimelineManager(@Autowired private val database: Database) {
                 .filter { it.completed && it.ordinal > 1 && it.timePoint.isNotEmpty() }
                 .groupBy { it.timePoint.last().toDateMonthString() }
                 .mapValues { it.value.count() }
+
         val firstProgressEpisodesAndDurations = progressRows.asSequence()
-                .filter { it.ordinal == 1 }
+                .filter { !it.chase && it.ordinal == 1 }
                 .flatMap { it.timePoint.asSequence().map { r -> Pair(r.toDateMonthString(), it.episodeDuration) } }
                 .groupBy({ it.first }) { it.second }
                 .mapValues { Pair(it.value.size, it.value.filterNotNull().sum()) }
         val firstProgressAnimations = progressRows.asSequence()
-                .filter { it.completed && it.ordinal == 1 && it.timePoint.isNotEmpty() }
+                .filter { !it.chase && it.completed && it.ordinal == 1 && it.timePoint.isNotEmpty() }
                 .groupBy { it.timePoint.last().toDateMonthString() }
                 .mapValues { it.value.count() }
+
+        val chaseProgressEpisodesAndDurations = progressRows.asSequence()
+                .filter { it.chase && it.ordinal == 1 }
+                .flatMap { it.timePoint.asSequence().map { r -> Pair(r.toDateMonthString(), it.episodeDuration) } }
+                .groupBy({ it.first }) { it.second }
+                .mapValues { Pair(it.value.size, it.value.filterNotNull().sum()) }
+        val chaseProgressAnimations = progressRows.asSequence()
+                .filter { it.chase && it.completed && it.ordinal == 1 && it.timePoint.isNotEmpty() }
+                .groupBy { it.timePoint.last().toDateMonthString() }
+                .mapValues { it.value.count() }
+
         val firstProgressScores = progressRows.asSequence()
                 .filter { it.completed && it.ordinal == 1 && it.timePoint.isNotEmpty() && it.score != null }
                 .groupBy { it.timePoint.last().toDateMonthString() }
@@ -201,30 +229,32 @@ class TimelineManager(@Autowired private val database: Database) {
                     ScoredRow(scoredAnimations, sumScore, maxScore, minScore, scoreCounts)
                 }
 
-        //三个条件都取到了各自的最大覆盖范围，因此只需这三个就能得到全部key
-        val keys = scatterEpisodesAndDurations.keys + secondaryProgressEpisodesAndDurations.keys + firstProgressEpisodesAndDurations.keys
+        //四个条件都取到了各自的最大覆盖范围，因此只需这四个就能得到全部key
+        val keys = scatterEpisodesAndDurations.keys + secondaryProgressEpisodesAndDurations.keys + firstProgressEpisodesAndDurations.keys + chaseProgressEpisodesAndDurations.keys
         if(keys.isEmpty()) {
             return emptyMap()
         }
 
         val keyValues = keys.associateWith {
+            val (chaseEpisodes, chaseDuration) = chaseProgressEpisodesAndDurations[it] ?: Pair(0, 0)
             val (watchedEpisodes, watchedDuration) = firstProgressEpisodesAndDurations[it] ?: Pair(0, 0)
             val (rewatchedEpisodes, rewatchedDuration) = secondaryProgressEpisodesAndDurations[it] ?: Pair(0, 0)
             val (scatterEpisodes, scatterDuration) = scatterEpisodesAndDurations[it] ?: Pair(0, 0)
             val scored = firstProgressScores[it]
             TimelineModal(
-                    firstProgressAnimations[it] ?: 0,
-                    secondaryProgressAnimations[it] ?: 0,
-                    watchedEpisodes, rewatchedEpisodes, scatterEpisodes,
-                    watchedDuration, rewatchedDuration, scatterDuration,
+                    chaseProgressAnimations[it] ?: 0, chaseEpisodes, chaseDuration,
+                    firstProgressAnimations[it] ?: 0, watchedEpisodes, watchedDuration,
+                    secondaryProgressAnimations[it] ?: 0, rewatchedEpisodes, rewatchedDuration,
+                    scatterEpisodes, scatterDuration,
                     scored?.scoredAnimations ?: 0, scored?.maxScore, scored?.minScore, scored?.sumScore ?: 0, scored?.scoreCounts ?: emptyMap()
             )
         }
 
         //迭代从最小值到最大值的全部时间点，防止无数据的时间点被遗漏
-        return stepFor(keys.min()!!.parseDateMonth()!!, keys.max()!!.parseDateMonth()!!) { it.plusMonths(1) }.asSequence()
+        return stepFor(keys.min()!!.parseDateMonth()!!, keys.max()!!.parseDateMonth()!!) { it.plusMonths(1) }
+                .asSequence()
                 .map { it.toDateMonthString() }
-                .map { Pair(it, keyValues[it] ?: TimelineModal(0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, 0, emptyMap())) }
+                .map { Pair(it, keyValues[it] ?: TimelineModal(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, 0, emptyMap())) }
                 .toMap()
     }
 }

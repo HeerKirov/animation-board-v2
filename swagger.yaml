@@ -531,6 +531,30 @@ paths:
                       result:
                         type: array
                         items: {$ref: '#/components/schemas/HistoryRes'}
+  /api/personal/records/scale:
+    get:
+      summary: 查看时间轴
+      description: 用户观看动画的进度记录。获得时间范围内的记录，只要进度的番位和查看区间有重合就会选出。按最早时间排序。
+      tags: [Record]
+      parameters:
+        - name: lower
+          in: query
+          required: true
+          description: 最早时间点
+          schema: {type: string, format: 'yyyy-MM-ddThh:mm:ssZ'}
+        - name: upper
+          in: query
+          required: true
+          description: 最晚时间点
+          schema: {type: string, format: 'yyyy-MM-ddThh:mm:ssZ'}
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ScaleRes'}
   /api/personal/records/find:
     get:
       summary: 发现动画
@@ -1998,6 +2022,26 @@ components:
               type: integer
               minimum: 1
               description: 进度的序号
+    ScaleRes:
+      allOf:
+        - $ref: '#/components/schemas/AnimationPartRes'
+        - type: object
+          properties:
+            start:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 进度的开始/最早时间点
+            end:
+              type: string
+              format: yyyy-MM-ddThh:mm:ssZ
+              description: 进度的结束/最新时间点
+            finished:
+              type: boolean
+              description: 进度是否已完成
+            ordinal:
+              type: integer
+              minimum: 1
+              description: 进度的序号
     FindRes:
       allOf:
         - $ref: '#/components/schemas/AnimationPartRes'
@@ -2421,9 +2465,12 @@ components:
               time:
                 type: string
                 description: 时间标记，根据聚合范围而定，为`yyyy`或`yyyy-S`
-              total_animations:
+              chase_animations:
                 type: integer
-                description: 此时间段内总共订阅的动画数量
+                description: 此时间段内以追番方式订阅的动画数量
+              supplement_animations:
+                type: integer
+                description: 此时间段内除追番外方式订阅的动画数量
               max_score:
                 type: integer
                 nullable: true
@@ -2480,27 +2527,36 @@ components:
               time:
                 type: string
                 description: 数据点时间点，根据聚合类型，为`yyyy`或`yyyy-S`或`yyyy-MM`
-              watched_animations:
+              chase_animations:
                 type: integer
-                description: 此时间段内首次看完的动画数量
+                description: 此时间段内以追番方式首次看完的动画数量
+              chase_episodes:
+                type: integer
+                description: 此时间段内以追番方式首次看完的动画集数
+              chase_duration:
+                type: integer
+                description: 此时间段内以追番方式首次看完的动画集数的总时长
+              supplement_animations:
+                type: integer
+                description: 此时间段内以补番方式首次看完的动画数量
+              supplement_episodes:
+                type: integer
+                description: 此时间段内以补番方式首次看完的动画集数
+              supplement_duration:
+                type: integer
+                description: 此时间段内以补番方式首次看完的动画集数的总时长
               rewatched_animations:
                 type: integer
                 description: 此时间段内重看看完的动画数量
-              watched_episodes:
-                type: integer
-                description: 此时间段内首次看完的动画集数
               rewatched_episodes:
                 type: integer
                 description: 此时间段内重看看完的动画集数
-              scatter_episodes:
-                type: integer
-                description: 此时间段内离散地看完的动画集数
-              watched_duration:
-                type: integer
-                description: 此时间段内首次看完的动画集数的总时长
               rewatched_duration:
                 type: integer
                 description: 此时间段内重看看完的动画集数的总时长
+              scatter_episodes:
+                type: integer
+                description: 此时间段内离散地看完的动画集数
               scatter_duration:
                 type: integer
                 description: 此时间段内离散地看完的动画集数的总时长

@@ -1,10 +1,7 @@
 package com.heerkirov.animation.service
 
 import com.heerkirov.animation.model.data.User
-import com.heerkirov.animation.model.filter.ActivityFilter
-import com.heerkirov.animation.model.filter.DiaryFilter
-import com.heerkirov.animation.model.filter.FindFilter
-import com.heerkirov.animation.model.filter.HistoryFilter
+import com.heerkirov.animation.model.filter.*
 import com.heerkirov.animation.model.result.*
 
 interface RecordGetterService {
@@ -15,6 +12,8 @@ interface RecordGetterService {
     fun activity(filter: ActivityFilter, user: User): ListResult<ActivityRes>
 
     fun history(filter: HistoryFilter, user: User): ListResult<HistoryRes>
+
+    fun scale(filter: ScaleFilter, user: User): List<ScaleRes>
 
     fun find(filter: FindFilter, user: User): ListResult<FindRes>
 

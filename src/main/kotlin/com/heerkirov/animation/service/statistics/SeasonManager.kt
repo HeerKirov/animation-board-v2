@@ -154,7 +154,8 @@ class SeasonManager(@Autowired private val database: Database) {
 
         val beginDate = LocalDate.of(year, (season - 1) * 3 + 1, 1)
         val endDate = beginDate.plusMonths(3)
-        val endUTCTime = ZonedDateTime.of(endDate, LocalTime.of(0, 0), zone).asUTCTime()
+        //由于数据库中的时间存的是UTC时间，因此需要把当前时区的end时间点转换为UTC时区的，得到的才是基于用户时区的整点数据
+        val endUTCTime = ZonedDateTime.of(endDate, LocalTime.MIN, zone).asUTCTime()
         //查出符合"用户有record的"、"至少存在1进度的"、"放送类型为TV&WEB的"、"发布时间在本季3个月内的"、"用户订阅时间在本季三个月或之前的"的全部动画
         val rowSets = database.from(Animations)
                 .innerJoin(Records, (Animations.id eq Records.animationId) and (Records.ownerId eq user.id) and (Records.progressCount greater 0))
