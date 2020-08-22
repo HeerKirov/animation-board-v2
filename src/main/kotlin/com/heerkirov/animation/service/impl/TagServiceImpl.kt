@@ -208,10 +208,12 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
             if(form.ordinal > groupCount) groupCount else form.ordinal
         }
 
-        database.update(TagGroups) {
-            where { it.group eq group }
-            if(newGroup != null) it.group to newGroup
-            if(newOrdinal != null) it.ordinal to newOrdinal
+        if(newGroup != null || newOrdinal != null) {
+            database.update(TagGroups) {
+                where { it.group eq group }
+                if(newGroup != null) it.group to newGroup
+                if(newOrdinal != null) it.ordinal to newOrdinal
+            }
         }
     }
 
