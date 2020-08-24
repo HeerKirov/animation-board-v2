@@ -8,14 +8,14 @@ import me.liuwj.ktorm.schema.int
 import me.liuwj.ktorm.schema.varchar
 
 object Comments : BaseTable<Comment>("comment") {
-    val id by int("id").primaryKey()
-    val ownerId by int("owner_id")
-    val animationId by int("animation_id")
-    val score by int("score")
-    val title by varchar("title")
-    val article by varchar("article")
-    val createTime by datetime("create_time")
-    val updateTime by datetime("update_time")
+    val id = int("id").primaryKey()
+    val ownerId = int("owner_id")
+    val animationId = int("animation_id")
+    val score = int("score")
+    val title = varchar("title")
+    val article = varchar("article")
+    val createTime = datetime("create_time")
+    val updateTime = datetime("update_time")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = Comment(
             id = row[id]!!,

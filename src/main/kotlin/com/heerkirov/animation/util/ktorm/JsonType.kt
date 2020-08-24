@@ -4,6 +4,7 @@ import com.heerkirov.animation.util.objectMapper
 import com.heerkirov.animation.util.parseJsonNode
 import com.heerkirov.animation.util.toJSONString
 import me.liuwj.ktorm.schema.BaseTable
+import me.liuwj.ktorm.schema.Column
 import me.liuwj.ktorm.schema.SqlType
 import me.liuwj.ktorm.schema.TypeReference
 import java.sql.PreparedStatement
@@ -36,14 +37,14 @@ class JsonStringType : SqlType<String>(Types.OTHER, typeName = "jsonb") {
     }
 }
 
-fun <E: Any, C: Any> BaseTable<E>.json(name: String, typeReference: TypeReference<C>): BaseTable<E>.ColumnRegistration<C> {
+fun <E: Any, C: Any> BaseTable<E>.json(name: String, typeReference: TypeReference<C>): Column<C> {
     return registerColumn(name, JsonType(JacksonConverter(typeReference)))
 }
 
-fun <E: Any, C: Any> BaseTable<E>.json(name: String, converter: JsonConverter<C>): BaseTable<E>.ColumnRegistration<C> {
+fun <E: Any, C: Any> BaseTable<E>.json(name: String, converter: JsonConverter<C>): Column<C> {
     return registerColumn(name, JsonType(converter))
 }
 
-fun <E: Any> BaseTable<E>.jsonString(name: String): BaseTable<E>.ColumnRegistration<String> {
+fun <E: Any> BaseTable<E>.jsonString(name: String): Column<String> {
     return registerColumn(name, JsonStringType())
 }

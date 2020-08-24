@@ -1,6 +1,7 @@
 package com.heerkirov.animation.util.ktorm
 
 import me.liuwj.ktorm.schema.BaseTable
+import me.liuwj.ktorm.schema.Column
 import me.liuwj.ktorm.schema.SqlType
 import me.liuwj.ktorm.schema.TypeReference
 import java.sql.PreparedStatement
@@ -20,7 +21,7 @@ class EnumType<T: Enum<T>>(enumClass: Class<T>) : SqlType<T>(Types.SMALLINT, typ
     }
 }
 
-fun <E: Any, C: Enum<C>> BaseTable<E>.enum(name: String, typeReference: TypeReference<C>): BaseTable<E>.ColumnRegistration<C> {
+fun <E: Any, C: Enum<C>> BaseTable<E>.enum(name: String, typeReference: TypeReference<C>): Column<C> {
     @Suppress("UNCHECKED_CAST")
     return registerColumn(name, EnumType(typeReference.referencedType as Class<C>))
 }

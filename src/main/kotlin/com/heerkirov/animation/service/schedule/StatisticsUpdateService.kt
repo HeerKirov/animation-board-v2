@@ -5,8 +5,7 @@ import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.service.statistics.*
 import com.heerkirov.animation.util.logger
 import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.from
-import me.liuwj.ktorm.dsl.select
+import me.liuwj.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service

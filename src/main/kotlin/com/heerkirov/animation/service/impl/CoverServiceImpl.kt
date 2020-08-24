@@ -11,6 +11,7 @@ import com.heerkirov.animation.exception.InternalException
 import com.heerkirov.animation.exception.NotFoundException
 import com.heerkirov.animation.service.CoverService
 import com.heerkirov.animation.util.logger
+import com.heerkirov.animation.util.ktorm.dsl.*
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,7 +44,7 @@ class CoverServiceImpl(@Autowired private val oss: OSS,
 
     @Transactional
     override fun uploadCover(type: CoverType, id: Int, srcFile: MultipartFile, inputStream: InputStream): String {
-        if(srcFile.isEmpty) throw BadRequestException(ErrCode.PARAM_REQUIRED, "File is empty. Please upload cover by param 'file'.")
+        if(srcFile.isEmpty) throw BadRequestException(ErrCode.PARAM_REQUIRED, "File is empty. Please upload cover = param 'file'.")
         if(!validContentType.contains(srcFile.contentType)) throw BadRequestException(ErrCode.PARAM_ERROR, "File content type must be image/png or image/jpeg.")
         if(srcFile.originalFilename.isNullOrBlank()) throw BadRequestException(ErrCode.PARAM_ERROR, "Filename of file cannot be empty.")
 

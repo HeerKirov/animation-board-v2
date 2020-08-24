@@ -7,18 +7,18 @@ import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 
 object Staffs : BaseTable<Staff>("staff") {
-    val id by int("id").primaryKey()
-    val name by varchar("name")
-    val originName by varchar("origin_name")
-    val remark by varchar("remark")
-    val cover by varchar("cover")
-    val isOrganization by boolean("is_organization")
-    val occupation by enum("occupation", typeRef<StaffOccupation>())
-    val animationCount by int("animation_count")
-    val createTime by datetime("create_time")
-    val updateTime by datetime("update_time")
-    val creator by int("creator")
-    val updater by int("updater")
+    val id = int("id").primaryKey()
+    val name = varchar("name")
+    val originName = varchar("origin_name")
+    val remark = varchar("remark")
+    val cover = varchar("cover")
+    val isOrganization = boolean("is_organization")
+    val occupation = enum("occupation", typeRef<StaffOccupation>())
+    val animationCount = int("animation_count")
+    val createTime = datetime("create_time")
+    val updateTime = datetime("update_time")
+    val creator = int("creator")
+    val updater = int("updater")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = Staff(
             id = row[id]!!,

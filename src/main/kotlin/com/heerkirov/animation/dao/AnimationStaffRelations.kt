@@ -10,10 +10,10 @@ import me.liuwj.ktorm.schema.long
 import me.liuwj.ktorm.schema.typeRef
 
 object AnimationStaffRelations : BaseTable<AnimationStaffRelation>("animation_staff_relation") {
-    val id by long("id").primaryKey()
-    val animationId by int("animation_id")
-    val staffId by int("staff_id")
-    val staffType by enum("staff_type", typeRef<StaffTypeInAnimation>())
+    val id = long("id").primaryKey()
+    val animationId = int("animation_id")
+    val staffId = int("staff_id")
+    val staffType = enum("staff_type", typeRef<StaffTypeInAnimation>())
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = AnimationStaffRelation(
             id = row[id]!!,

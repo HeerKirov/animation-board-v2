@@ -1,6 +1,7 @@
 package com.heerkirov.animation.util.ktorm
 
 import me.liuwj.ktorm.schema.BaseTable
+import me.liuwj.ktorm.schema.Column
 import me.liuwj.ktorm.schema.SqlType
 import java.sql.PreparedStatement
 import java.sql.ResultSet
@@ -20,6 +21,6 @@ class ArrayType<T: Any>(private val stringConverter: StringConverter<T>) : SqlTy
     }
 }
 
-fun <E: Any, C: Any> BaseTable<E>.array(name: String, stringConverter: StringConverter<C>): BaseTable<E>.ColumnRegistration<List<C?>> {
+fun <E: Any, C: Any> BaseTable<E>.array(name: String, stringConverter: StringConverter<C>): Column<List<C?>> {
     return registerColumn(name, ArrayType(stringConverter))
 }

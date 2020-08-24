@@ -7,10 +7,10 @@ import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 
 object Users : BaseTable<User>("user") {
-    val id by int("id").primaryKey()
-    val username by varchar("username")
-    val isStaff by boolean("is_staff")
-    val setting by json("setting", typeRef<UserSetting>())
+    val id = int("id").primaryKey()
+    val username = varchar("username")
+    val isStaff = boolean("is_staff")
+    val setting = json("setting", typeRef<UserSetting>())
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = User(
             id = row[id]!!,

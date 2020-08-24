@@ -2,6 +2,7 @@ package com.heerkirov.animation.model.result
 
 import me.liuwj.ktorm.dsl.Query
 import me.liuwj.ktorm.dsl.QueryRowSet
+import me.liuwj.ktorm.dsl.map
 
 data class ListResult<T>(val total: Int, val result: List<T>)
 

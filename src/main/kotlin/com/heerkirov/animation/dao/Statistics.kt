@@ -7,12 +7,12 @@ import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 
 object Statistics : BaseTable<Statistic>("statistics") {
-    val id by long("id").primaryKey()
-    val ownerId by int("owner_id")
-    val type by enum("type", typeRef<StatisticType>())
-    val key by varchar("key")
-    val content by jsonString("content")
-    val updateTime by datetime("update_time")
+    val id = long("id").primaryKey()
+    val ownerId = int("owner_id")
+    val type = enum("type", typeRef<StatisticType>())
+    val key = varchar("key")
+    val content = jsonString("content")
+    val updateTime = datetime("update_time")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = Statistic(
             id = row[id]!!,

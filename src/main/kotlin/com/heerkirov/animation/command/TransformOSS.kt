@@ -4,10 +4,7 @@ import com.aliyun.oss.OSSClientBuilder
 import com.heerkirov.animation.dao.Animations
 import com.heerkirov.animation.util.loadProperties
 import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.from
-import me.liuwj.ktorm.dsl.isNotNull
-import me.liuwj.ktorm.dsl.select
-import me.liuwj.ktorm.dsl.where
+import me.liuwj.ktorm.dsl.*
 
 /**
  * @since 0.1.0

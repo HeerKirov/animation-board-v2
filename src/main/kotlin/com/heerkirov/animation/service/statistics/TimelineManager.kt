@@ -10,6 +10,7 @@ import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.result.TimelineOverviewRes
 import com.heerkirov.animation.model.result.TimelineRes
 import com.heerkirov.animation.util.*
+import com.heerkirov.animation.util.ktorm.dsl.*
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired

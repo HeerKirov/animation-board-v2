@@ -11,33 +11,33 @@ import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 
 object Animations : BaseTable<Animation>("animation") {
-    val id by int("id").primaryKey()
-    val title by varchar("title")
-    val originTitle by varchar("origin_title")
-    val otherTitle by varchar("other_title")
-    val cover by varchar("cover")
+    val id = int("id").primaryKey()
+    val title = varchar("title")
+    val originTitle = varchar("origin_title")
+    val otherTitle = varchar("other_title")
+    val cover = varchar("cover")
 
-    val publishType by enum("publish_type", typeRef<PublishType>())
-    val publishTime by date("publish_time")
-    val episodeDuration by int("episode_duration")
-    val totalEpisodes by int("total_episodes")
-    val publishedEpisodes by int("published_episodes")
-    val publishedRecord by json("published_record", NullableListConverter(DateTimeConverter()))
-    val publishPlan by json("publish_plan", ListConverter(DateTimeConverter()))
+    val publishType = enum("publish_type", typeRef<PublishType>())
+    val publishTime = date("publish_time")
+    val episodeDuration = int("episode_duration")
+    val totalEpisodes = int("total_episodes")
+    val publishedEpisodes = int("published_episodes")
+    val publishedRecord = json("published_record", NullableListConverter(DateTimeConverter()))
+    val publishPlan = json("publish_plan", ListConverter(DateTimeConverter()))
 
-    val introduction by text("introduction")
-    val keyword by varchar("keyword")
-    val sexLimitLevel by enum("sex_limit_level", typeRef<SexLimitLevel>())
-    val violenceLimitLevel by enum("violence_limit_level", typeRef<ViolenceLimitLevel>())
-    val originalWorkType by enum("original_work_type", typeRef<OriginalWorkType>())
+    val introduction = text("introduction")
+    val keyword = varchar("keyword")
+    val sexLimitLevel = enum("sex_limit_level", typeRef<SexLimitLevel>())
+    val violenceLimitLevel = enum("violence_limit_level", typeRef<ViolenceLimitLevel>())
+    val originalWorkType = enum("original_work_type", typeRef<OriginalWorkType>())
 
-    val relations by json("relations", RelationConverter())
-    val relationsTopology by json("relations_topology", RelationConverter())
+    val relations = json("relations", RelationConverter())
+    val relationsTopology = json("relations_topology", RelationConverter())
 
-    val createTime by datetime("create_time")
-    val updateTime by datetime("update_time")
-    val creator by int("creator")
-    val updater by int("updater")
+    val createTime = datetime("create_time")
+    val updateTime = datetime("update_time")
+    val creator = int("creator")
+    val updater = int("updater")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = Animation(
             id = row[id]!!,

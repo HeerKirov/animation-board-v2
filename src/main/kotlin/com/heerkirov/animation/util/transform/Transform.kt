@@ -3,6 +3,7 @@ package com.heerkirov.animation.util.transform
 import com.heerkirov.animation.dao.Users
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.data.UserSetting
+import com.heerkirov.animation.util.ktorm.dsl.*
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import java.time.LocalDateTime
@@ -66,7 +67,8 @@ class UserLoader(private val v1Database: Database, private val database: Databas
         val v1User = v1Database.from(V1Profiles)
                 .innerJoin(V1Users, V1Users.id eq V1Profiles.userId)
                 .select(V1Profiles.nightUpdateMode, V1Profiles.animationUpdateNotice, V1Users.isStaff)
-                .where { V1Profiles.username eq username }.first()
+                .where { V1Profiles.username eq username }
+                .first()
 
         val userSetting = UserSetting(
                 animationUpdateNotice = v1User[V1Profiles.animationUpdateNotice]!!,

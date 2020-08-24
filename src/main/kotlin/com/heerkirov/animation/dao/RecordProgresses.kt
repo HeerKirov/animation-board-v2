@@ -8,13 +8,13 @@ import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 
 object RecordProgresses : BaseTable<RecordProgress>("record_progress") {
-    val id by long("id").primaryKey()
-    val recordId by long("record_id")
-    val ordinal by int("ordinal")
-    val watchedEpisodes by int("watched_episodes")
-    val watchedRecord by json("watched_record", NullableListConverter(DateTimeConverter()))
-    val startTime by datetime("start_time")
-    val finishTime by datetime("finish_time")
+    val id = long("id").primaryKey()
+    val recordId = long("record_id")
+    val ordinal = int("ordinal")
+    val watchedEpisodes = int("watched_episodes")
+    val watchedRecord = json("watched_record", NullableListConverter(DateTimeConverter()))
+    val startTime = datetime("start_time")
+    val finishTime = datetime("finish_time")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = RecordProgress(
             id = row[id]!!,

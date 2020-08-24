@@ -8,12 +8,12 @@ import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 
 object Messages : BaseTable<Message>("message") {
-    val id by long("id").primaryKey()
-    val ownerId by int("owner_id")
-    val type by enum("type", typeRef<MessageType>())
-    val content by jsonString("content")
-    val read by boolean("read")
-    val createTime by datetime("create_time")
+    val id = long("id").primaryKey()
+    val ownerId = int("owner_id")
+    val type = enum("type", typeRef<MessageType>())
+    val content = jsonString("content")
+    val read = boolean("read")
+    val createTime = datetime("create_time")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = Message(
             id = row[id]!!,

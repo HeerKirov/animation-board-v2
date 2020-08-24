@@ -7,27 +7,27 @@ import me.liuwj.ktorm.schema.*
 
 
 object V1Animations : BaseTable<V1Animation>("api_animation") {
-    val id by long("id").primaryKey()
-    val title by varchar("title")
-    val originTitle by varchar("origin_title")
-    val otherTitle by varchar("other_title")
-    val cover by varchar("cover")
-    val originalWorkType by varchar("original_work_type")
-    val publishType by varchar("publish_type")
-    val publishTime by date("publish_time")
-    val sumQuantity by int("sum_quantity")
-    val publishedQuantity by int("published_quantity")
-    val duration by int("duration")
-    val publishPlan by array("publish_plan", V1TimestampStrConverter())
-    val publishedRecord by array("published_record", V1TimestampStrConverter())
-    val introduction by varchar("introduction")
-    val keyword by varchar("keyword")
-    val limitLevel by varchar("limit_level")
-    val relations by jsonString("original_relations")
-    val createTime by datetime("create_time")
-    val updateTime by datetime("update_time")
-    val creator by varchar("creator")
-    val updater by varchar("updater")
+    val id = long("id").primaryKey()
+    val title = varchar("title")
+    val originTitle = varchar("origin_title")
+    val otherTitle = varchar("other_title")
+    val cover = varchar("cover")
+    val originalWorkType = varchar("original_work_type")
+    val publishType = varchar("publish_type")
+    val publishTime = date("publish_time")
+    val sumQuantity = int("sum_quantity")
+    val publishedQuantity = int("published_quantity")
+    val duration = int("duration")
+    val publishPlan = array("publish_plan", V1TimestampStrConverter())
+    val publishedRecord = array("published_record", V1TimestampStrConverter())
+    val introduction = varchar("introduction")
+    val keyword = varchar("keyword")
+    val limitLevel = varchar("limit_level")
+    val relations = jsonString("original_relations")
+    val createTime = datetime("create_time")
+    val updateTime = datetime("update_time")
+    val creator = varchar("creator")
+    val updater = varchar("updater")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1Animation(
             id = row[id]!!,
@@ -55,15 +55,15 @@ object V1Animations : BaseTable<V1Animation>("api_animation") {
 }
 
 object V1Staffs : BaseTable<V1Staff>("api_staff") {
-    val id by long("id").primaryKey()
-    val name by varchar("name")
-    val originName by varchar("origin_name")
-    val remark by varchar("remark")
-    val isOrganization by boolean("is_organization")
-    val createTime by datetime("create_time")
-    val updateTime by datetime("update_time")
-    val creator by varchar("creator")
-    val updater by varchar("updater")
+    val id = long("id").primaryKey()
+    val name = varchar("name")
+    val originName = varchar("origin_name")
+    val remark = varchar("remark")
+    val isOrganization = boolean("is_organization")
+    val createTime = datetime("create_time")
+    val updateTime = datetime("update_time")
+    val creator = varchar("creator")
+    val updater = varchar("updater")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1Staff(
             id = row[id]!!,
@@ -79,13 +79,13 @@ object V1Staffs : BaseTable<V1Staff>("api_staff") {
 }
 
 object V1Tags : BaseTable<V1Tag>("api_tag") {
-    val id by long("id").primaryKey()
-    val name by varchar("name")
-    val introduction by varchar("introduction")
-    val createTime by datetime("create_time")
-    val updateTime by datetime("update_time")
-    val creator by varchar("creator")
-    val updater by varchar("updater")
+    val id = long("id").primaryKey()
+    val name = varchar("name")
+    val introduction = varchar("introduction")
+    val createTime = datetime("create_time")
+    val updateTime = datetime("update_time")
+    val creator = varchar("creator")
+    val updater = varchar("updater")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1Tag(
             id = row[id]!!,
@@ -99,14 +99,14 @@ object V1Tags : BaseTable<V1Tag>("api_tag") {
 }
 
 object V1Comments : BaseTable<V1Comment>("api_comment") {
-    val id by long("id").primaryKey()
-    val ownerId by int("owner_id")
-    val animationId by long("animation_id")
-    val score by int("score")
-    val shortComment by varchar("short_comment")
-    val article by varchar("article")
-    val createTime by datetime("create_time")
-    val updateTime by datetime("update_time")
+    val id = long("id").primaryKey()
+    val ownerId = int("owner_id")
+    val animationId = long("animation_id")
+    val score = int("score")
+    val shortComment = varchar("short_comment")
+    val article = varchar("article")
+    val createTime = datetime("create_time")
+    val updateTime = datetime("update_time")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1Comment(
             id = row[id]!!,
@@ -121,18 +121,18 @@ object V1Comments : BaseTable<V1Comment>("api_comment") {
 }
 
 object V1Diaries : BaseTable<V1Diary>("api_diary") {
-    val id by long("id").primaryKey()
-    val ownerId by int("owner_id")
-    val animationId by long("animation_id")
-    val status by varchar("status")
-    val watchedQuantity by int("watched_quantity")
-    val watchedRecord by array("watched_record", V1TimestampStrConverter())
-    val watchManyTimes by boolean("watch_many_times")
-    val watchOriginalWork by boolean("watch_original_work")
-    val subscriptionTime by datetime("subscription_time")
-    val finishTime by datetime("finish_time")
-    val createTime by datetime("create_time")
-    val updateTime by datetime("update_time")
+    val id = long("id").primaryKey()
+    val ownerId = int("owner_id")
+    val animationId = long("animation_id")
+    val status = varchar("status")
+    val watchedQuantity = int("watched_quantity")
+    val watchedRecord = array("watched_record", V1TimestampStrConverter())
+    val watchManyTimes = boolean("watch_many_times")
+    val watchOriginalWork = boolean("watch_original_work")
+    val subscriptionTime = datetime("subscription_time")
+    val finishTime = datetime("finish_time")
+    val createTime = datetime("create_time")
+    val updateTime = datetime("update_time")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1Diary(
             id = row[id]!!,
@@ -151,9 +151,9 @@ object V1Diaries : BaseTable<V1Diary>("api_diary") {
 }
 
 object V1AnimationStaffByAuthors : BaseTable<V1AnimationStaffByAuthor>("api_animation_original_work_authors") {
-    val id by long("id").primaryKey()
-    val animationId by long("animation_id")
-    val staffId by long("staff_id")
+    val id = long("id").primaryKey()
+    val animationId = long("animation_id")
+    val staffId = long("staff_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1AnimationStaffByAuthor(
             id = row[id]!!,
@@ -163,9 +163,9 @@ object V1AnimationStaffByAuthors : BaseTable<V1AnimationStaffByAuthor>("api_anim
 }
 
 object V1AnimationStaffByCompanies : BaseTable<V1AnimationStaffByCompany>("api_animation_staff_companies") {
-    val id by long("id").primaryKey()
-    val animationId by long("animation_id")
-    val staffId by long("staff_id")
+    val id = long("id").primaryKey()
+    val animationId = long("animation_id")
+    val staffId = long("staff_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1AnimationStaffByCompany(
             id = row[id]!!,
@@ -175,9 +175,9 @@ object V1AnimationStaffByCompanies : BaseTable<V1AnimationStaffByCompany>("api_a
 }
 
 object V1AnimationStaffBySupervisors : BaseTable<V1AnimationStaffBySupervisor>("api_animation_staff_supervisors") {
-    val id by long("id").primaryKey()
-    val animationId by long("animation_id")
-    val staffId by long("staff_id")
+    val id = long("id").primaryKey()
+    val animationId = long("animation_id")
+    val staffId = long("staff_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1AnimationStaffBySupervisor(
             id = row[id]!!,
@@ -187,9 +187,9 @@ object V1AnimationStaffBySupervisors : BaseTable<V1AnimationStaffBySupervisor>("
 }
 
 object V1AnimationTags : BaseTable<V1AnimationTag>("api_animation_tags") {
-    val id by long("id").primaryKey()
-    val animationId by long("animation_id")
-    val tagId by long("tag_id")
+    val id = long("id").primaryKey()
+    val animationId = long("animation_id")
+    val tagId = long("tag_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1AnimationTag(
             id = row[id]!!,
@@ -199,8 +199,8 @@ object V1AnimationTags : BaseTable<V1AnimationTag>("api_animation_tags") {
 }
 
 object V1Users : BaseTable<V1User>("auth_user") {
-    val id by int("id").primaryKey()
-    val isStaff by boolean("is_staff")
+    val id = int("id").primaryKey()
+    val isStaff = boolean("is_staff")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1User(
             id = row[id]!!,
@@ -209,11 +209,11 @@ object V1Users : BaseTable<V1User>("auth_user") {
 }
 
 object V1Profiles : BaseTable<V1Profile>("api_profile") {
-    val id by int("id").primaryKey()
-    val username by varchar("username")
-    val userId by int("user_id")
-    val animationUpdateNotice by boolean("animation_update_notice")
-    val nightUpdateMode by boolean("night_update_mode")
+    val id = int("id").primaryKey()
+    val username = varchar("username")
+    val userId = int("user_id")
+    val animationUpdateNotice = boolean("animation_update_notice")
+    val nightUpdateMode = boolean("night_update_mode")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = V1Profile(
             id = row[id]!!,

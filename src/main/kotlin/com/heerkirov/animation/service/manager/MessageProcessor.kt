@@ -7,6 +7,7 @@ import com.heerkirov.animation.model.data.ContentPublish
 import com.heerkirov.animation.model.result.ContentPublishRes
 import com.heerkirov.animation.util.parseJSONObject
 import com.heerkirov.animation.util.toJSONString
+import com.heerkirov.animation.util.ktorm.dsl.*
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired

@@ -8,17 +8,17 @@ import me.liuwj.ktorm.dsl.QueryRowSet
 import me.liuwj.ktorm.schema.*
 
 object Records : BaseTable<Record>("record") {
-    val id by long("id").primaryKey()
-    val ownerId by int("owner_id")
-    val animationId by int("animation_id")
-    val seenOriginal by boolean("seen_original")
-    val inDiary by boolean("in_diary")
-    val scatterRecord by json("scatter_record", typeRef<List<ScatterRecord>>())
-    val progressCount by int("progress_count")
-    val lastActiveTime by datetime("last_active_time")
-    val lastActiveEvent by json("last_active_event", typeRef<ActiveEvent>())
-    val createTime by datetime("create_time")
-    val updateTime by datetime("update_time")
+    val id = long("id").primaryKey()
+    val ownerId = int("owner_id")
+    val animationId = int("animation_id")
+    val seenOriginal = boolean("seen_original")
+    val inDiary = boolean("in_diary")
+    val scatterRecord = json("scatter_record", typeRef<List<ScatterRecord>>())
+    val progressCount = int("progress_count")
+    val lastActiveTime = datetime("last_active_time")
+    val lastActiveEvent = json("last_active_event", typeRef<ActiveEvent>())
+    val createTime = datetime("create_time")
+    val updateTime = datetime("update_time")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = Record(
             id = row[id]!!,

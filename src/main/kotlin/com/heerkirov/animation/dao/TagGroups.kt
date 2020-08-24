@@ -7,8 +7,8 @@ import me.liuwj.ktorm.schema.int
 import me.liuwj.ktorm.schema.varchar
 
 object TagGroups : BaseTable<TagGroup>("tag_group") {
-    val group by varchar("group").primaryKey()
-    val ordinal by int("ordinal")
+    val group = varchar("group").primaryKey()
+    val ordinal = int("ordinal")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean) = TagGroup(
             group = row[group]!!,
