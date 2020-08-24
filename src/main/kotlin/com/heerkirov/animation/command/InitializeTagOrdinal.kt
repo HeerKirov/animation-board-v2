@@ -11,6 +11,8 @@ import me.liuwj.ktorm.entity.sortedBy
 import me.liuwj.ktorm.entity.toList
 
 /**
+ * @since 0.3.0
+ * [version upgrade]
  * 初始化tag的ordinal。
  */
 fun main() {

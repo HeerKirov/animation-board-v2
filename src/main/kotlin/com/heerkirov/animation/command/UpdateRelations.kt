@@ -5,6 +5,8 @@ import com.heerkirov.animation.util.loadProperties
 import me.liuwj.ktorm.database.Database
 
 /**
+ * @since 0.1.0
+ * [database util]
  * 刷新全数据库的relation关系。
  */
 fun main() {

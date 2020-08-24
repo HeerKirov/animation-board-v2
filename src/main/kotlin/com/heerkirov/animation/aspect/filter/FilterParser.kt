@@ -4,10 +4,8 @@ import com.heerkirov.animation.aspect.validation.mapString
 import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.util.reduce
-import org.springframework.core.MethodParameter
 import java.lang.NumberFormatException
 import kotlin.reflect.KClass
-import kotlin.reflect.KParameter
 import kotlin.reflect.KType
 import kotlin.reflect.full.primaryConstructor
 
@@ -16,16 +14,16 @@ import kotlin.reflect.full.primaryConstructor
     - 所有参数支持kotlin原生默认值(isOptional)
  */
 
-fun parseFilterObject(p: MethodParameter, kClass: KClass<*>, parameterMap: Map<String, Array<String>>): Any {
+fun parseFilterObject(kClass: KClass<*>, parameterMap: Map<String, Array<String>>): Any {
     val constructor = kClass.primaryConstructor!!
 
     val args = constructor.parameters.map { parameter ->
         val value = when(val annotation = parameter.annotations.firstOrNull { it is Search || it is Order || it is Limit || it is Offset || it is Filter }) {
-            is Search -> parseSearchParameter(annotation, parameter.type, takeParameterValue(parameterMap, parameter, annotation.value))
-            is Limit -> parseLimitParameter(annotation, parameter.type, takeParameterValue(parameterMap, parameter, annotation.value))
-            is Offset -> parseOffsetParameter(annotation, parameter.type, takeParameterValue(parameterMap, parameter, annotation.value))
-            is Order -> parseOrderParameter(annotation, parameter.type, takeParameterValues(parameterMap, parameter, annotation.value, annotation.delimiter))
-            is Filter -> parseFilterParameter(annotation, parameter.type, takeParameterValue(parameterMap, parameter, annotation.value))
+            is Search -> parseSearchParameter(takeParameterValue(parameterMap, annotation.value))
+            is Limit -> parseLimitParameter(annotation, takeParameterValue(parameterMap, annotation.value))
+            is Offset -> parseOffsetParameter(annotation, takeParameterValue(parameterMap, annotation.value))
+            is Order -> parseOrderParameter(annotation, parameter.type, takeParameterValues(parameterMap, annotation.value, annotation.delimiter))
+            is Filter -> parseFilterParameter(annotation, parameter.type, takeParameterValue(parameterMap, annotation.value))
             else -> throw UnsupportedOperationException()
         }
 
@@ -35,20 +33,20 @@ fun parseFilterObject(p: MethodParameter, kClass: KClass<*>, parameterMap: Map<S
     return constructor.callBy(args)
 }
 
-private fun takeParameterValue(parameterMap: Map<String, Array<String>>, parameter: KParameter, key: String): String? {
+private fun takeParameterValue(parameterMap: Map<String, Array<String>>, key: String): String? {
     return parameterMap[key]?.firstOrNull()?.ifBlank { null }
 }
 
-private fun takeParameterValues(parameterMap: Map<String, Array<String>>, parameter: KParameter, key: String, delimiter: String): Array<String> {
+private fun takeParameterValues(parameterMap: Map<String, Array<String>>, key: String, delimiter: String): Array<String> {
     val arr = parameterMap[key] ?: return emptyArray()
     return arr.map { it -> it.split(delimiter).map { it.trim() }.filter { it.isNotBlank() } }.reduce().toTypedArray()
 }
 
-private fun parseSearchParameter(search: Search, kType: KType, parameterValue: String?): String? {
+private fun parseSearchParameter(parameterValue: String?): String? {
     return parameterValue
 }
 
-private fun parseLimitParameter(limit: Limit, kType: KType, parameterValue: String?): Int? {
+private fun parseLimitParameter(limit: Limit, parameterValue: String?): Int? {
     return if(parameterValue != null) {
         val value = try { parameterValue.toInt() }catch (e: NumberFormatException) {
             throw BadRequestException(ErrCode.TYPE_ERROR, "Param '${limit.value}' must be integer.")
@@ -62,7 +60,7 @@ private fun parseLimitParameter(limit: Limit, kType: KType, parameterValue: Stri
     }
 }
 
-private fun parseOffsetParameter(offset: Offset, kType: KType, parameterValue: String?): Int? {
+private fun parseOffsetParameter(offset: Offset, parameterValue: String?): Int? {
     return if(parameterValue != null) {
         val value = try { parameterValue.toInt() }catch (e: NumberFormatException) {
             throw BadRequestException(ErrCode.TYPE_ERROR, "Param '${offset.value}' must be integer.")

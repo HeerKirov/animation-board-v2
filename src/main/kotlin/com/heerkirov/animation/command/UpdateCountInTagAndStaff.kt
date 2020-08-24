@@ -6,6 +6,8 @@ import com.heerkirov.animation.util.loadProperties
 import me.liuwj.ktorm.database.Database
 
 /**
+ * @since 0.3.0
+ * [version upgrade]
  * 刷新全数据库的tag和staff的count。
  */
 fun main() {

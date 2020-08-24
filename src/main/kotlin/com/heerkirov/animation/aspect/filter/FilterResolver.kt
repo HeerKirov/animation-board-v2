@@ -12,6 +12,6 @@ class FilterResolver : HandlerMethodArgumentResolver {
     }
 
     override fun resolveArgument(p: MethodParameter, container: ModelAndViewContainer?, request: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
-        return parseFilterObject(p, p.parameterType.kotlin, request.parameterMap)
+        return parseFilterObject(p.parameterType.kotlin, request.parameterMap)
     }
 }

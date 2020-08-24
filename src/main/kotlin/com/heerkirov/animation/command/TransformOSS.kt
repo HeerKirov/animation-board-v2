@@ -10,6 +10,8 @@ import me.liuwj.ktorm.dsl.select
 import me.liuwj.ktorm.dsl.where
 
 /**
+ * @since 0.1.0
+ * [initialize oss]
  * 从animation board v1的OSS存储迁移数据。
  */
 fun main() {

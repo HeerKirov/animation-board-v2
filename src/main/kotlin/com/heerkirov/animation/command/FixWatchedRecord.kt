@@ -6,6 +6,8 @@ import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.dsl.*
 
 /**
+ * @since 0.2.2
+ * [bug fixes]
  * 修正一项watchedRecord的数据错误。
  * 这个错误是从v1数据库迁移而来的。有一部分数据的watchedRecord填写成了当时条目的创建时间，远大于完成时间，这部分数据在统计时发生了统计偏差，因此要予以修正。
  */

@@ -11,6 +11,8 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 /**
+ * @since 0.4.0
+ * [version upgrade]
  * 更新tag和group的ordinal。按照tag的默认ordinal做一次排序，然后排给group-tag结构。
  */
 fun main() {

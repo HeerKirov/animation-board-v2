@@ -5,6 +5,8 @@ import com.heerkirov.animation.util.transform.transformV1ToV2
 import me.liuwj.ktorm.database.Database
 
 /**
+ * @since 0.1.0
+ * [initialize database]
  * 从animation board v1的数据库迁移数据。
  */
 fun main() {
