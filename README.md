@@ -11,7 +11,7 @@
 * Aliyun OSS
 
 ## Build
-### Compile & Build
+### Compile & Package
 ```bash
 mvn clean package
 ```
