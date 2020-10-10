@@ -147,8 +147,8 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
                 it.ordinal to progressCount + 1
                 it.watchedEpisodes to groupedList.size
                 it.watchedRecord to groupedList
-                it.startTime to groupedList.first()
-                it.finishTime to if(groupedList.size >= totalEpisodes) groupedList.last() else null
+                it.startTime to groupedList.minOrNull()!!
+                it.finishTime to if(groupedList.size >= totalEpisodes) groupedList.maxOrNull()!! else null
             }
 
             database.update(Records) {
@@ -173,7 +173,7 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
                 where { it.id eq progress.id }
                 it.watchedEpisodes to watchedEpisodes
                 it.watchedRecord to recordProcessor.calculateProgressWatchedRecord(progress.watchedRecord, progress.watchedEpisodes, progress.watchedEpisodes, now) + groupedList
-                if(watchedEpisodes >= totalEpisodes) it.finishTime to now
+                if(watchedEpisodes >= totalEpisodes) it.finishTime to groupedList.maxOrNull()!!
             }
 
             database.update(Records) {

@@ -21,7 +21,7 @@ class AnimationRecordProcessor(@Autowired private val database: Database) {
             val rowSets = database.from(RecordProgresses)
                     .innerJoin(Records, RecordProgresses.recordId eq Records.id)
                     .innerJoin(Animations, Records.animationId eq Animations.id)
-                    .select(RecordProgresses.id, RecordProgresses.watchedEpisodes)
+                    .select(RecordProgresses.id, RecordProgresses.watchedEpisodes, RecordProgresses.watchedRecord)
                     .where { (Animations.id eq animationId) and (RecordProgresses.watchedEpisodes greaterEq publishedEpisodes) }
 
             val now = DateTimeUtil.now()
@@ -31,10 +31,12 @@ class AnimationRecordProcessor(@Autowired private val database: Database) {
                     val id = row[RecordProgresses.id]!!
                     val watchedEpisodes = row[RecordProgresses.watchedEpisodes]!!
                     val newWatchedEpisodes = if(watchedEpisodes > publishedEpisodes) publishedEpisodes else watchedEpisodes
+                    val watchedRecord = row[RecordProgresses.watchedRecord]!!
+                    val newFinishTime = if(newWatchedEpisodes >= totalEpisodes) watchedRecord[newWatchedEpisodes] ?: now else null
                     item {
                         where { it.id eq id }
                         it.watchedEpisodes to newWatchedEpisodes
-                        it.finishTime to if(newWatchedEpisodes >= totalEpisodes) now else null
+                        it.finishTime to newFinishTime
                     }
                 }
             }
