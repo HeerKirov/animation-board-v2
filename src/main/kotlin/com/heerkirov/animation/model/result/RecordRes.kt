@@ -1,6 +1,7 @@
 package com.heerkirov.animation.model.result
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.heerkirov.animation.enums.ChaseType
 import com.heerkirov.animation.enums.RecordStatus
 import com.heerkirov.animation.model.data.ActiveEvent
 import java.time.LocalDateTime
@@ -47,6 +48,7 @@ data class ScaleRes(@JsonProperty("animation_id") val animationId: Int,
                     @JsonProperty("ordinal") val ordinal: Int,
                     @JsonProperty("start") val start: String,
                     @JsonProperty("end") val end: String,
+                    @JsonProperty("chase_type") val chaseType: ChaseType,
                     @JsonProperty("finished") val finished: Boolean)
 
 data class FindRes(@JsonProperty("animation_id") val animationId: Int,

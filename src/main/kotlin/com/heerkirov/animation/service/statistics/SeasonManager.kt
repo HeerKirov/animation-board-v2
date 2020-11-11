@@ -216,7 +216,7 @@ class SeasonManager(@Autowired private val database: Database) {
 /**
  * 计算一部动画的及时度。
  * 一部动画的及时度，为其全部集数，排除不可计算集数(如没有发布时间或观看时间记录)，的及时度，去掉最高最低，的平均分。
- * 如果可计算集数不超过5，那么直接视作不可计算。
+ * 如果可计算集数不超过3，那么直接视作不可计算。
  * 集数的发布时间从publishedRecord取得。但是，当存在一些集数的发布时间早于用户的订阅时间subscriptionTime时，这些集数从第1集开始，替换为订阅时间，并且后续每集顺延1天。
  */
 private fun calculatePositivity(publishedRecord: List<LocalDateTime?>, watchedRecord: List<LocalDateTime?>, subscriptionTime: LocalDateTime): Double? {
@@ -230,7 +230,7 @@ private fun calculatePositivity(publishedRecord: List<LocalDateTime?>, watchedRe
             positivity.add(calculatePositivityOfEpisode(realPublishedTime, watchedTime))
         }
     }
-    if(positivity.size < 5) return null
+    if(positivity.size < 3) return null
 
     return positivity.sorted().subList(1, positivity.size - 1).average()
 }

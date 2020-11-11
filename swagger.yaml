@@ -2035,6 +2035,10 @@ components:
               type: string
               format: yyyy-MM-ddThh:mm:ssZ
               description: 进度的结束/最新时间点
+            chase_type:
+              type: string
+              enum: ["CHASE", "SUPPLEMENT", "REWATCHED"]
+              description: 进度的追番类别标记，追番、补番或重看
             finished:
               type: boolean
               description: 进度是否已完成

@@ -3,7 +3,9 @@ package com.heerkirov.animation.service.impl
 import com.heerkirov.animation.dao.Animations
 import com.heerkirov.animation.dao.RecordProgresses
 import com.heerkirov.animation.dao.Records
+import com.heerkirov.animation.enums.ChaseType
 import com.heerkirov.animation.enums.ErrCode
+import com.heerkirov.animation.enums.PublishType
 import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.exception.NotFoundException
 import com.heerkirov.animation.model.data.User
@@ -18,8 +20,7 @@ import me.liuwj.ktorm.dsl.*
 import me.liuwj.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.*
 
 @Service
 class RecordGetterServiceImpl(@Autowired private val database: Database,
@@ -94,7 +95,7 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                         it[Animations.publishPlan]!!.first().toDateTimeString(),
                         it[Animations.publishedEpisodes]!! + 1
                 ) }
-                .map { Pair(it.nextPublishTime.parseDateTime().toLocalTime(), it) }
+                .map { Pair(it.nextPublishTime.parseDateTime().asZonedTime(zone).toLocalTime(), it) }
                 .sortedBy { it.first }
                 .map { it.second }
                 .groupBy {
@@ -168,17 +169,33 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
         val lower = filter.lower ?: throw BadRequestException(ErrCode.PARAM_REQUIRED, "Query 'lower' is required.")
         val upper = filter.upper ?: throw BadRequestException(ErrCode.PARAM_REQUIRED, "Query 'upper' is required.")
 
-        data class Row(val id: Int, val title: String, val cover: String?, val ordinal: Int, val start: LocalDateTime, val end: LocalDateTime, val finished: Boolean)
+        val zone = ZoneId.of(user.setting.timezone)
+
+        data class Row(val id: Int, val title: String, val cover: String?, val ordinal: Int, val start: LocalDateTime, val end: LocalDateTime, val chaseType: ChaseType, val finished: Boolean)
+
+        fun getChaseType(ordinal: Int, publishType: PublishType?, publishTime: LocalDate?, startTime: LocalDateTime?): ChaseType {
+            if(ordinal > 1) { return ChaseType.REWATCHED }
+            if(publishType != PublishType.TV_AND_WEB || publishTime == null || startTime == null) { return ChaseType.SUPPLEMENT }
+            val endDate = LocalDate.of(publishTime.year, ((publishTime.monthValue - 1) / 3 * 3 + 1), 1).plusMonths(3)
+            val endUTCTime = ZonedDateTime.of(endDate, LocalTime.MIN, zone).asUTCTime()
+            return if(startTime < endUTCTime) {
+                ChaseType.CHASE
+            }else{
+                ChaseType.SUPPLEMENT
+            }
+        }
 
         return database.from(RecordProgresses)
                 .innerJoin(Records, (Records.id eq RecordProgresses.recordId) and (Records.ownerId eq user.id))
                 .innerJoin(Animations, Animations.id eq Records.animationId)
-                .select(Animations.id, Animations.title, Animations.cover, RecordProgresses.ordinal, RecordProgresses.startTime, RecordProgresses.finishTime, RecordProgresses.watchedRecord)
+                .select(Animations.id, Animations.title, Animations.cover, Animations.publishType, Animations.publishTime,
+                        RecordProgresses.ordinal, RecordProgresses.startTime, RecordProgresses.finishTime, RecordProgresses.watchedRecord)
                 .whereWithConditions {
                     //由于startTime/finishTime并不能用作最终范围，因此在where条件中仅做一次粗筛
                     it += RecordProgresses.finishTime.isNull() or (RecordProgresses.finishTime greaterEq lower)
                     it += RecordProgresses.startTime.isNull() or (RecordProgresses.startTime lessEq upper)
-                }.asSequence()
+                }
+                .asSequence()
                 .map { row ->
                     val watchedRecord = row[RecordProgresses.watchedRecord]!!
                     val startTime = row[RecordProgresses.startTime]
@@ -187,12 +204,15 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                     val start = startTime ?: watchedRecord.firstOrNull { it != null } ?: finishTime
                     val end = finishTime ?: watchedRecord.lastOrNull { it != null } ?: startTime
                     if (start == null || end == null) null else {
-                        Row(row[Animations.id]!!, row[Animations.title]!!, row[Animations.cover], row[RecordProgresses.ordinal]!!, start, end, finishTime != null)
+                        val ordinal = row[RecordProgresses.ordinal]!!
+                        Row(row[Animations.id]!!, row[Animations.title]!!, row[Animations.cover],
+                                ordinal, start, end, getChaseType(ordinal, row[Animations.publishType], row[Animations.publishTime], startTime), finishTime != null)
                     }
-                }.filterNotNull()
+                }
+                .filterNotNull()
                 .filter { it.start <= upper && it.end >= lower }
                 .sortedBy { it.start }
-                .map { ScaleRes(it.id, it.title, it.cover, it.ordinal, it.start.toDateTimeString(), it.end.toDateTimeString(), it.finished) }
+                .map { ScaleRes(it.id, it.title, it.cover, it.ordinal, it.start.toDateTimeString(), it.end.toDateTimeString(), it.chaseType, it.finished) }
                 .toList()
     }
 
