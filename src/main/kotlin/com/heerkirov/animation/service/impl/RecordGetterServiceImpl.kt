@@ -95,7 +95,10 @@ class RecordGetterServiceImpl(@Autowired private val database: Database,
                         it[Animations.publishPlan]!!.first().toDateTimeString(),
                         it[Animations.publishedEpisodes]!! + 1
                 ) }
-                .map { Pair(it.nextPublishTime.parseDateTime().asZonedTime(zone).toLocalTime(), it) }
+                .map { Pair(it.nextPublishTime.parseDateTime()
+                        .asZonedTime(zone)
+                        .runIf(nightTimeTable) { t -> t.minusHours(recordProcessor.nightTimeTableHourOffset) }
+                        .toLocalTime(), it) }
                 .sortedBy { it.first }
                 .map { it.second }
                 .groupBy {
