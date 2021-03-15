@@ -56,7 +56,7 @@ class CommentServiceImpl(@Autowired private val database: Database) : CommentSer
                         it[Animations.id]!!,
                         it[Animations.title]!!,
                         it[Animations.cover],
-                        it[Comments.score]!!,
+                        it[Comments.score],
                         it[Comments.title],
                         it[Comments.article],
                         it[Comments.createTime]!!.toDateTimeString(),
@@ -83,7 +83,7 @@ class CommentServiceImpl(@Autowired private val database: Database) : CommentSer
                         it[Animations.id]!!,
                         it[Animations.title]!!,
                         it[Animations.cover],
-                        it[Comments.score]!!
+                        it[Comments.score]
                 ) }
     }
 
@@ -149,7 +149,7 @@ class CommentServiceImpl(@Autowired private val database: Database) : CommentSer
                         it[Animations.id]!!,
                         it[Animations.title]!!,
                         it[Animations.cover],
-                        it[Comments.score]!!,
+                        it[Comments.score],
                         it[Comments.title],
                         it[Comments.article],
                         it[Comments.createTime]!!.toDateTimeString(),

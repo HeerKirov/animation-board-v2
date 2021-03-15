@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class CommentRankRes(@JsonProperty("animation_id") val animationId: Int,
                           @JsonProperty("title") val title: String,
                           @JsonProperty("cover") val cover: String?,
-                          @JsonProperty("score") val score: Int)
+                          @JsonProperty("score") val score: Int?)
 
 data class CommentFindRes(@JsonProperty("animation_id") val animationId: Int,
                           @JsonProperty("title") val title: String,
