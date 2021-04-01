@@ -3,11 +3,11 @@ package com.heerkirov.animation.dao
 import com.heerkirov.animation.enums.StaffTypeInAnimation
 import com.heerkirov.animation.model.data.AnimationStaffRelation
 import com.heerkirov.animation.util.ktorm.enum
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.BaseTable
-import me.liuwj.ktorm.schema.int
-import me.liuwj.ktorm.schema.long
-import me.liuwj.ktorm.schema.typeRef
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.BaseTable
+import org.ktorm.schema.int
+import org.ktorm.schema.long
+import org.ktorm.schema.typeRef
 
 object AnimationStaffRelations : BaseTable<AnimationStaffRelation>("animation_staff_relation") {
     val id = long("id").primaryKey()

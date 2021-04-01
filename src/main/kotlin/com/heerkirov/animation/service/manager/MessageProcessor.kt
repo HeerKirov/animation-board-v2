@@ -8,8 +8,8 @@ import com.heerkirov.animation.model.result.ContentPublishRes
 import com.heerkirov.animation.util.parseJSONObject
 import com.heerkirov.animation.util.toJSONString
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -36,11 +36,11 @@ class MessageProcessor(@Autowired private val database: Database) {
      */
     fun createPublishMessage(ownerId: Int, animationId: Int, oldEpisodes: Int, newEpisodes: Int, now: LocalDateTime): AssignmentsBuilder.(Messages) -> Unit {
         return {
-            it.ownerId to ownerId
-            it.read to false
-            it.type to MessageType.PUBLISH
-            it.createTime to now
-            it.content to ContentPublish(animationId, oldEpisodes, newEpisodes).toJSONString()
+            set(it.ownerId, ownerId)
+            set(it.read, false)
+            set(it.type, MessageType.PUBLISH)
+            set(it.createTime, now)
+            set(it.content, ContentPublish(animationId, oldEpisodes, newEpisodes).toJSONString())
         }
     }
 }

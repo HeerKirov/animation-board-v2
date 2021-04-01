@@ -2,11 +2,11 @@ package com.heerkirov.animation.util.transform
 
 import com.heerkirov.animation.dao.Comments
 import com.heerkirov.animation.util.logger
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.batchInsert
-import me.liuwj.ktorm.entity.sequenceOf
-import me.liuwj.ktorm.entity.sortedBy
-import me.liuwj.ktorm.entity.toList
+import org.ktorm.database.Database
+import org.ktorm.dsl.batchInsert
+import org.ktorm.entity.sequenceOf
+import org.ktorm.entity.sortedBy
+import org.ktorm.entity.toList
 
 class TransformComment(private val userLoader: UserLoader,
                        private val v1Database: Database,
@@ -18,13 +18,13 @@ class TransformComment(private val userLoader: UserLoader,
         database.batchInsert(Comments) {
             for (v1Comment in v1Comments) {
                 item {
-                    it.ownerId to userLoader[v1Comment.ownerId].id
-                    it.animationId to animationIdMap[v1Comment.animationId]
-                    it.score to v1Comment.score
-                    it.title to v1Comment.shortComment
-                    it.article to v1Comment.article
-                    it.createTime to v1Comment.createTime.toV2Time()
-                    it.updateTime to (v1Comment.updateTime?.toV2Time() ?: v1Comment.createTime.toV2Time())
+                    set(it.ownerId, userLoader[v1Comment.ownerId].id)
+                    set(it.animationId, animationIdMap[v1Comment.animationId])
+                    set(it.score, v1Comment.score)
+                    set(it.title, v1Comment.shortComment)
+                    set(it.article, v1Comment.article)
+                    set(it.createTime, v1Comment.createTime.toV2Time())
+                    set(it.updateTime, v1Comment.updateTime?.toV2Time() ?: v1Comment.createTime.toV2Time())
                 }
             }
         }

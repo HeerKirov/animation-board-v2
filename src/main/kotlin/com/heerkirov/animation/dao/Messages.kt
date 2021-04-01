@@ -4,8 +4,8 @@ import com.heerkirov.animation.enums.MessageType
 import com.heerkirov.animation.model.data.Message
 import com.heerkirov.animation.util.ktorm.enum
 import com.heerkirov.animation.util.ktorm.jsonString
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.*
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.*
 
 object Messages : BaseTable<Message>("message") {
     val id = long("id").primaryKey()

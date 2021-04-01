@@ -14,8 +14,8 @@ import com.heerkirov.animation.model.result.PeriodRes
 import com.heerkirov.animation.model.result.toResWith
 import com.heerkirov.animation.util.*
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.time.ZoneId
@@ -42,25 +42,25 @@ class PeriodManager(@Autowired private val database: Database) {
         val modal = generate(user)
         val now = DateTimeUtil.now()
 
-        val min = modal.keys.min()
-        val max = modal.keys.max()
+        val min = modal.keys.minOrNull()
+        val max = modal.keys.maxOrNull()
         val overview = PeriodOverviewModal(min, max)
         val overviewId = database.from(Statistics).select(Statistics.id)
                 .where { (Statistics.ownerId eq user.id) and (Statistics.type eq StatisticType.PERIOD_OVERVIEW) }
                 .firstOrNull()?.get(Statistics.id)
         if(overviewId == null) {
             database.insert(Statistics) {
-                it.ownerId to user.id
-                it.type to StatisticType.PERIOD_OVERVIEW
-                it.key to null
-                it.content to overview.toJSONString()
-                it.updateTime to now
+                set(it.ownerId, user.id)
+                set(it.type, StatisticType.PERIOD_OVERVIEW)
+                set(it.key, null)
+                set(it.content, overview.toJSONString())
+                set(it.updateTime, now)
             }
         }else{
             database.update(Statistics) {
                 where { it.id eq overviewId }
-                it.content to overview.toJSONString()
-                it.updateTime to now
+                set(it.content, overview.toJSONString())
+                set(it.updateTime, now)
             }
         }
 
@@ -70,17 +70,17 @@ class PeriodManager(@Autowired private val database: Database) {
                 .firstOrNull()?.get(Statistics.id)
         if(sumId == null) {
             database.insert(Statistics) {
-                it.ownerId to user.id
-                it.type to StatisticType.PERIOD
-                it.key to "ALL"
-                it.content to sumModal.toJSONString()
-                it.updateTime to now
+                set(it.ownerId, user.id)
+                set(it.type, StatisticType.PERIOD)
+                set(it.key, "ALL")
+                set(it.content, sumModal.toJSONString())
+                set(it.updateTime, now)
             }
         }else{
             database.update(Statistics) {
                 where { it.id eq sumId }
-                it.content to sumModal.toJSONString()
-                it.updateTime to now
+                set(it.content, sumModal.toJSONString())
+                set(it.updateTime, now)
             }
         }
 
@@ -101,11 +101,11 @@ class PeriodManager(@Autowired private val database: Database) {
             database.batchInsert(Statistics) {
                 for (append in appends) {
                     item {
-                        it.ownerId to user.id
-                        it.type to StatisticType.PERIOD
-                        it.key to append
-                        it.content to modal.getValue(append.toInt()).toJSONString()
-                        it.updateTime to now
+                        set(it.ownerId, user.id)
+                        set(it.type, StatisticType.PERIOD)
+                        set(it.key, append)
+                        set(it.content, modal.getValue(append.toInt()).toJSONString())
+                        set(it.updateTime, now)
                     }
                 }
             }
@@ -116,8 +116,8 @@ class PeriodManager(@Autowired private val database: Database) {
                 for (update in updates) {
                     item {
                         where { (it.ownerId eq user.id) and (it.type eq StatisticType.PERIOD) and (it.key eq update) }
-                        it.content to modal.getValue(update.toInt()).toJSONString()
-                        it.updateTime to now
+                        set(it.content, modal.getValue(update.toInt()).toJSONString())
+                        set(it.updateTime, now)
                     }
                 }
             }

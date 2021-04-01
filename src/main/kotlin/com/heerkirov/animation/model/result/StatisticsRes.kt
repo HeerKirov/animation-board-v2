@@ -7,7 +7,7 @@ import com.heerkirov.animation.enums.SexLimitLevel
 import com.heerkirov.animation.enums.ViolenceLimitLevel
 import com.heerkirov.animation.model.data.*
 import com.heerkirov.animation.util.toDateTimeString
-import me.liuwj.ktorm.dsl.avg
+import org.ktorm.dsl.avg
 import java.time.LocalDateTime
 
 data class OverviewRes(@JsonProperty("total_animations") val totalAnimations: Int,

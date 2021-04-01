@@ -16,10 +16,10 @@ import com.heerkirov.animation.service.TagService
 import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.OrderTranslator
 import com.heerkirov.animation.util.orderBy
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.*
-import me.liuwj.ktorm.support.postgresql.ilike
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
+import org.ktorm.entity.*
+import org.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -86,20 +86,20 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
         val group = if(tagForm.group?.isNotBlank() == true) tagForm.group else null
         if(group != null && database.sequenceOf(TagGroups).find { it.group eq group } == null) {
             database.insert(TagGroups) {
-                it.group to group
-                it.ordinal to (getGroupCount() + 1)
+                set(it.group, group)
+                set(it.ordinal, getGroupCount() + 1)
             }
         }
 
         return database.insertAndGenerateKey(Tags) {
-            it.name to tagForm.name
-            it.introduction to tagForm.introduction
-            it.group to group
-            it.ordinal to (getTagCount(group) + 1)
-            it.createTime to now
-            it.updateTime to now
-            it.creator to creator.id
-            it.updater to creator.id
+            set(it.name, tagForm.name)
+            set(it.introduction, tagForm.introduction)
+            set(it.group, group)
+            set(it.ordinal, getTagCount(group) + 1)
+            set(it.createTime, now)
+            set(it.updateTime, now)
+            set(it.creator, creator.id)
+            set(it.updater, creator.id)
         } as Int
     }
 
@@ -121,12 +121,12 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
                 if(newOrdinal > tag.ordinal) {
                     database.update(Tags) {
                         where { if(tag.group != null) { it.group eq tag.group }else{ it.group.isNull() } and (it.ordinal greater tag.ordinal) and (it.ordinal lessEq newOrdinal) }
-                        it.ordinal to (it.ordinal - 1)
+                        set(it.ordinal, it.ordinal - 1)
                     }
                 }else{
                     database.update(Tags) {
                         where { if(tag.group != null) { it.group eq tag.group }else{ it.group.isNull() } and (it.ordinal greaterEq newOrdinal) and (it.ordinal less tag.ordinal) }
-                        it.ordinal to (it.ordinal + 1)
+                        set(it.ordinal, it.ordinal + 1)
                     }
                 }
                 newOrdinal
@@ -136,14 +136,14 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
             //如果group不存在则创建
             if(database.sequenceOf(TagGroups).find { it.group eq tagForm.group } == null) {
                 database.insert(TagGroups) {
-                    it.group to tagForm.group
-                    it.ordinal to (getGroupCount() + 1)
+                    set(it.group, tagForm.group)
+                    set(it.ordinal, getGroupCount() + 1)
                 }
             }
             //重排旧的group的ordinal
             database.update(Tags) {
                 where { if (tag.group != null) { it.group eq tag.group }else{ it.group.isNull() } and (it.ordinal greater tag.ordinal) }
-                it.ordinal to (it.ordinal - 1)
+                set(it.ordinal, it.ordinal - 1)
             }
             //将tag插入新的group中
             Pair(tagForm.group, if(tagForm.ordinal == null) {
@@ -155,19 +155,19 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
                 val newOrdinal = if(tagForm.ordinal > max) max else tagForm.ordinal
                 database.update(Tags) {
                     where { (it.group eq tagForm.group) and (it.ordinal greaterEq newOrdinal) }
-                    it.ordinal to (it.ordinal + 1)
+                    set(it.ordinal, it.ordinal + 1)
                 }
                 newOrdinal
             })
         }
 
         if(database.update(Tags) {
-            if(tagForm.name != null) it.name to tagForm.name
-            if(tagForm.introduction != null) it.introduction to tagForm.introduction
-            if(newGroup != null) it.group to newGroup
-            if(newOrdinal != null) it.ordinal to newOrdinal
-            it.updateTime to DateTimeUtil.now()
-            it.updater to updater.id
+            if(tagForm.name != null) set(it.name, tagForm.name)
+            if(tagForm.introduction != null) set(it.introduction, tagForm.introduction)
+            if(newGroup != null) set(it.group, newGroup)
+            if(newOrdinal != null) set(it.ordinal, newOrdinal)
+            set(it.updateTime, DateTimeUtil.now())
+            set(it.updater, updater.id)
             where { it.id eq id }
         } == 0) throw NotFoundException("Tag not found.")
     }
@@ -188,7 +188,7 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
             }
             database.update(Tags) {
                 where { it.group eq group }
-                it.group to form.group
+                set(it.group, form.group)
             }
             form.group
         }
@@ -196,12 +196,12 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
             if(form.ordinal > tagGroup.ordinal) {
                 database.update(TagGroups) {
                     where { (it.ordinal greater tagGroup.ordinal) and (it.ordinal lessEq form.ordinal) }
-                    it.ordinal to (it.ordinal - 1)
+                    set(it.ordinal, it.ordinal - 1)
                 }
             }else{
                 database.update(TagGroups) {
                     where { (it.ordinal greaterEq form.ordinal) and (it.ordinal less tagGroup.ordinal) }
-                    it.ordinal to (it.ordinal + 1)
+                    set(it.ordinal, it.ordinal + 1)
                 }
             }
             val groupCount = getGroupCount()
@@ -211,8 +211,8 @@ class TagServiceImpl(@Autowired private val database: Database) : TagService {
         if(newGroup != null || newOrdinal != null) {
             database.update(TagGroups) {
                 where { it.group eq group }
-                if(newGroup != null) it.group to newGroup
-                if(newOrdinal != null) it.ordinal to newOrdinal
+                if(newGroup != null) set(it.group, newGroup)
+                if(newOrdinal != null) set(it.ordinal, newOrdinal)
             }
         }
     }

@@ -4,8 +4,8 @@ import com.heerkirov.animation.dao.TagGroups
 import com.heerkirov.animation.dao.Tags
 import com.heerkirov.animation.model.data.Tag
 import com.heerkirov.animation.util.loadProperties
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -46,8 +46,8 @@ fun main() {
                 val group = lists[i].first().group
                 if(group != null) {
                     item {
-                        it.ordinal to (i + 1)
-                        it.group to group
+                        set(it.ordinal, i + 1)
+                        set(it.group, group)
                     }
                 }
             }
@@ -59,7 +59,7 @@ fun main() {
                     val tag = list[i]
                     item {
                         where { it.id eq tag.id }
-                        it.ordinal to (i + 1)
+                        set(it.ordinal, i + 1)
                     }
                 }
             }

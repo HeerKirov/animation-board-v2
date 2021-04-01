@@ -4,8 +4,8 @@ import com.heerkirov.animation.dao.Users
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.data.UserSetting
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -76,9 +76,9 @@ class UserLoader(private val v1Database: Database, private val database: Databas
         )
         val isStaff = v1User[V1Users.isStaff]!!
         val id = database.insertAndGenerateKey(Users) {
-            it.username to username
-            it.isStaff to isStaff
-            it.setting to userSetting
+            set(it.username, username)
+            set(it.isStaff, isStaff)
+            set(it.setting, userSetting)
         }
         return User(id as Int, username, isStaff, userSetting)
     }

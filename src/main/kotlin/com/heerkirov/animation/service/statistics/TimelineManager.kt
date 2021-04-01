@@ -11,8 +11,8 @@ import com.heerkirov.animation.model.result.TimelineOverviewRes
 import com.heerkirov.animation.model.result.TimelineRes
 import com.heerkirov.animation.util.*
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.lang.RuntimeException
@@ -39,7 +39,7 @@ class TimelineManager(@Autowired private val database: Database) {
                 .orderBy(Statistics.key.asc())
                 .map { Statistics.createEntity(it) }
 
-        val updateTime = data.asSequence().map { it.updateTime }.max()?.toDateTimeString()
+        val updateTime = data.asSequence().map { it.updateTime }.maxOrNull()?.toDateTimeString()
 
         val items = data
                 .groupBy {
@@ -63,8 +63,8 @@ class TimelineManager(@Autowired private val database: Database) {
                             modals.sumBy { it.rewatchedDuration },
                             modals.sumBy { it.scatterEpisodes },
                             modals.sumBy { it.scatterDuration },
-                            modals.asSequence().map { it.maxScore }.filterNotNull().max(),
-                            modals.asSequence().map { it.minScore }.filterNotNull().min(),
+                            modals.asSequence().map { it.maxScore }.filterNotNull().maxOrNull(),
+                            modals.asSequence().map { it.minScore }.filterNotNull().minOrNull(),
                             modals.sumBy { it.scoredAnimations }.let { scoredAnimations ->
                                 if(scoredAnimations == 0) null else {
                                     modals.sumBy { it.sumScore } * 1.0 / scoredAnimations
@@ -83,8 +83,8 @@ class TimelineManager(@Autowired private val database: Database) {
         val modal = generate(user)
         val now = DateTimeUtil.now()
 
-        val min = modal.keys.min()?.parseDateMonth()
-        val max = modal.keys.max()?.parseDateMonth()
+        val min = modal.keys.minOrNull()?.parseDateMonth()
+        val max = modal.keys.maxOrNull()?.parseDateMonth()
         val overview = TimelineOverviewModal(min?.year, min?.monthValue, max?.year, max?.monthValue)
         val overviewId = database.from(Statistics)
                 .select(Statistics.id)
@@ -92,17 +92,17 @@ class TimelineManager(@Autowired private val database: Database) {
                 .firstOrNull()?.get(Statistics.id)
         if(overviewId == null) {
             database.insert(Statistics) {
-                it.ownerId to user.id
-                it.type to StatisticType.TIMELINE_OVERVIEW
-                it.key to null
-                it.content to overview.toJSONString()
-                it.updateTime to now
+                set(it.ownerId, user.id)
+                set(it.type, StatisticType.TIMELINE_OVERVIEW)
+                set(it.key, null)
+                set(it.content, overview.toJSONString())
+                set(it.updateTime, now)
             }
         }else{
             database.update(Statistics) {
                 where { it.id eq overviewId }
-                it.content to overview.toJSONString()
-                it.updateTime to now
+                set(it.content, overview.toJSONString())
+                set(it.updateTime, now)
             }
         }
 
@@ -123,11 +123,11 @@ class TimelineManager(@Autowired private val database: Database) {
             database.batchInsert(Statistics) {
                 for (append in appends) {
                     item {
-                        it.ownerId to user.id
-                        it.type to StatisticType.TIMELINE
-                        it.key to append
-                        it.content to modal.getValue(append).toJSONString()
-                        it.updateTime to now
+                        set(it.ownerId, user.id)
+                        set(it.type, StatisticType.TIMELINE)
+                        set(it.key, append)
+                        set(it.content, modal.getValue(append).toJSONString())
+                        set(it.updateTime, now)
                     }
                 }
             }
@@ -138,8 +138,8 @@ class TimelineManager(@Autowired private val database: Database) {
                 for (update in updates) {
                     item {
                         where { (it.ownerId eq user.id) and (it.type eq StatisticType.TIMELINE) and (it.key eq update) }
-                        it.content to modal.getValue(update).toJSONString()
-                        it.updateTime to now
+                        set(it.content, modal.getValue(update).toJSONString())
+                        set(it.updateTime, now)
                     }
                 }
             }
@@ -223,8 +223,8 @@ class TimelineManager(@Autowired private val database: Database) {
                 .groupBy { it.timePoint.last().toDateMonthString() }
                 .mapValues { (_, list) ->
                     val scoredAnimations = list.count()
-                    val maxScore = list.maxBy { it.score!! }?.score
-                    val minScore = list.minBy { it.score!! }?.score
+                    val maxScore = list.maxByOrNull { it.score!! }?.score
+                    val minScore = list.minByOrNull { it.score!! }?.score
                     val sumScore = list.sumBy { it.score!! }
                     val scoreCounts = list.groupingBy { it.score!! }.eachCount()
                     ScoredRow(scoredAnimations, sumScore, maxScore, minScore, scoreCounts)
@@ -252,7 +252,7 @@ class TimelineManager(@Autowired private val database: Database) {
         }
 
         //迭代从最小值到最大值的全部时间点，防止无数据的时间点被遗漏
-        return stepFor(keys.min()!!.parseDateMonth()!!, keys.max()!!.parseDateMonth()!!) { it.plusMonths(1) }
+        return stepFor(keys.minOrNull()!!.parseDateMonth()!!, keys.maxOrNull()!!.parseDateMonth()!!) { it.plusMonths(1) }
                 .asSequence()
                 .map { it.toDateMonthString() }
                 .map { Pair(it, keyValues[it] ?: TimelineModal(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, 0, emptyMap())) }

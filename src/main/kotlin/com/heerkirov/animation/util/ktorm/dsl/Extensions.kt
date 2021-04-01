@@ -1,8 +1,8 @@
 package com.heerkirov.animation.util.ktorm.dsl
 
-import me.liuwj.ktorm.dsl.Query
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.dsl.asIterable
+import org.ktorm.dsl.Query
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.dsl.asIterable
 
 fun Query.first(): QueryRowSet = this.asIterable().first()
 

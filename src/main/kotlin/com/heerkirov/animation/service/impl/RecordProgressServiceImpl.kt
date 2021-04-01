@@ -20,9 +20,9 @@ import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.arrayListFor
 import com.heerkirov.animation.util.toDateTimeString
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
+import org.ktorm.entity.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -53,20 +53,20 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
         if(progressCount == 0) {
             //没有进度，那么创建一个
             database.insert(RecordProgresses) {
-                it.recordId to recordId
-                it.ordinal to 1
-                it.watchedEpisodes to 1
-                it.watchedRecord to listOf(now)
-                it.startTime to now
-                it.finishTime to if(1 >= totalEpisodes) now else null
+                set(it.recordId, recordId)
+                set(it.ordinal, 1)
+                set(it.watchedEpisodes, 1)
+                set(it.watchedRecord, listOf(now))
+                set(it.startTime, now)
+                set(it.finishTime, if(1 >= totalEpisodes) now else null)
             }
             database.update(Records) {
                 where { it.id eq recordId }
-                it.progressCount to 1
-                it.lastActiveTime to now
-                it.lastActiveEvent to ActiveEvent(ActiveEventType.WATCH_EPISODE, listOf(1))
-                it.updateTime to now
-                if(1 >= totalEpisodes) it.inDiary to false
+                set(it.progressCount, 1)
+                set(it.lastActiveTime, now)
+                set(it.lastActiveEvent, ActiveEvent(ActiveEventType.WATCH_EPISODE, listOf(1)))
+                set(it.updateTime, now)
+                if(1 >= totalEpisodes) set(it.inDiary, false)
             }
             return NextRes(1)
         }else{
@@ -80,16 +80,16 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
             }
             database.update(RecordProgresses) {
                 where { it.id eq progress.id }
-                it.watchedEpisodes to watchedEpisodes + 1
-                it.watchedRecord to recordProcessor.calculateProgressWatchedRecord(progress.watchedRecord, watchedEpisodes, watchedEpisodes + 1, now)
-                if(watchedEpisodes + 1 >= totalEpisodes) it.finishTime to now
+                set(it.watchedEpisodes, watchedEpisodes + 1)
+                set(it.watchedRecord, recordProcessor.calculateProgressWatchedRecord(progress.watchedRecord, watchedEpisodes, watchedEpisodes + 1, now))
+                if(watchedEpisodes + 1 >= totalEpisodes) set(it.finishTime, now)
             }
             database.update(Records) {
                 where { it.id eq recordId }
-                it.lastActiveTime to now
-                it.lastActiveEvent to ActiveEvent(ActiveEventType.WATCH_EPISODE, listOf(watchedEpisodes + 1))
-                it.updateTime to now
-                if(watchedEpisodes + 1 >= totalEpisodes) it.inDiary to false
+                set(it.lastActiveTime, now)
+                set(it.lastActiveEvent, ActiveEvent(ActiveEventType.WATCH_EPISODE, listOf(watchedEpisodes + 1)))
+                set(it.updateTime, now)
+                if(watchedEpisodes + 1 >= totalEpisodes) set(it.inDiary, false)
             }
             return NextRes(watchedEpisodes + 1)
         }
@@ -167,7 +167,7 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
                     for (progress in needUpdate) {
                         item {
                             where { it.id eq progress.id }
-                            it.ordinal to (progress.ordinal + 1)
+                            set(it.ordinal, progress.ordinal + 1)
                         }
                     }
                 }
@@ -180,20 +180,20 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
             val watchedEpisodes = if(form.finishTime != null || form.watchedEpisodes!! > publishedEpisodes) publishedEpisodes else form.watchedEpisodes
 
             database.insert(RecordProgresses) {
-                it.recordId to recordId
-                it.ordinal to ordinal
-                it.watchedEpisodes to watchedEpisodes
-                it.watchedRecord to arrayListFor(watchedEpisodes) { null }
-                it.startTime to form.startTime
-                it.finishTime to form.finishTime
+                set(it.recordId, recordId)
+                set(it.ordinal, ordinal)
+                set(it.watchedEpisodes, watchedEpisodes)
+                set(it.watchedRecord, arrayListFor(watchedEpisodes) { null })
+                set(it.startTime, form.startTime)
+                set(it.finishTime, form.finishTime)
             }
 
             database.update(Records) {
                 where { it.id eq recordId }
-                it.progressCount to progressCount + 1
-                it.lastActiveEvent to ActiveEvent(ActiveEventType.CREATE_PROGRESS)
-                it.lastActiveTime to now
-                it.updateTime to now
+                set(it.progressCount, progressCount + 1)
+                set(it.lastActiveEvent, ActiveEvent(ActiveEventType.CREATE_PROGRESS))
+                set(it.lastActiveTime, now)
+                set(it.updateTime, now)
             }
 
             return ProgressRes(ordinal, watchedEpisodes, form.startTime?.toDateTimeString(), form.finishTime?.toDateTimeString())
@@ -206,20 +206,20 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
 
             //普通新增
             database.insert(RecordProgresses) {
-                it.recordId to recordId
-                it.ordinal to progressCount + 1
-                it.watchedEpisodes to 0
-                it.watchedRecord to emptyList()
-                it.startTime to now
-                it.finishTime to null
+                set(it.recordId, recordId)
+                set(it.ordinal, progressCount + 1)
+                set(it.watchedEpisodes, 0)
+                set(it.watchedRecord, emptyList())
+                set(it.startTime, now)
+                set(it.finishTime, null)
             }
 
             database.update(Records) {
                 where { it.id eq recordId }
-                it.progressCount to (progressCount + 1)
-                it.lastActiveEvent to ActiveEvent(ActiveEventType.CREATE_PROGRESS)
-                it.lastActiveTime to now
-                it.updateTime to now
+                set(it.progressCount, progressCount + 1)
+                set(it.lastActiveEvent, ActiveEvent(ActiveEventType.CREATE_PROGRESS))
+                set(it.lastActiveTime, now)
+                set(it.updateTime, now)
             }
 
             return ProgressRes(progressCount + 1, 0, now.toDateTimeString(), null)
@@ -255,20 +255,20 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
         if(newWatchedEpisodes != progress.watchedEpisodes) {
             database.update(RecordProgresses) {
                 where { it.id eq progress.id }
-                it.watchedEpisodes to newWatchedEpisodes
-                it.watchedRecord to recordProcessor.calculateProgressWatchedRecord(progress.watchedRecord, progress.watchedEpisodes, newWatchedEpisodes, now)
-                if(newWatchedEpisodes >= totalEpisodes) it.finishTime to now
-                else if(progress.finishTime != null) it.finishTime to null
+                set(it.watchedEpisodes, newWatchedEpisodes)
+                set(it.watchedRecord, recordProcessor.calculateProgressWatchedRecord(progress.watchedRecord, progress.watchedEpisodes, newWatchedEpisodes, now))
+                if(newWatchedEpisodes >= totalEpisodes) set(it.finishTime, now)
+                else if(progress.finishTime != null) set(it.finishTime, null)
             }
 
             database.update(Records) {
                 where { it.id eq recordId }
-                if(newWatchedEpisodes >= totalEpisodes) it.inDiary to false
+                if(newWatchedEpisodes >= totalEpisodes) set(it.inDiary, false)
                 if(newWatchedEpisodes > progress.watchedEpisodes) {
-                    it.lastActiveEvent to ActiveEvent(ActiveEventType.WATCH_EPISODE, IntRange(progress.watchedEpisodes + 1, newWatchedEpisodes).toList())
-                    it.lastActiveTime to now
+                    set(it.lastActiveEvent, ActiveEvent(ActiveEventType.WATCH_EPISODE, IntRange(progress.watchedEpisodes + 1, newWatchedEpisodes).toList()))
+                    set(it.lastActiveTime, now)
                 }
-                it.updateTime to now
+                set(it.updateTime, now)
             }
 
             return ProgressRes(progress.ordinal,
@@ -300,15 +300,15 @@ class RecordProgressServiceImpl(@Autowired private val database: Database,
 
         database.update(Records) {
             where { it.id eq recordId }
-            it.progressCount to (progressCount - 1)
-            it.updateTime to now
+            set(it.progressCount, progressCount - 1)
+            set(it.updateTime, now)
         }
         database.delete(RecordProgresses) { (it.recordId eq recordId) and (it.ordinal eq ordinal) }
         database.batchUpdate(RecordProgresses) {
             for(i in (ordinal + 1)..progressCount) {
                 item {
                     where { (it.recordId eq recordId) and (it.ordinal eq i) }
-                    it.ordinal to (i - 1)
+                    set(it.ordinal, i - 1)
                 }
             }
         }

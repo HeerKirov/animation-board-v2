@@ -4,8 +4,8 @@ import com.heerkirov.animation.model.data.ActiveEvent
 import com.heerkirov.animation.model.data.Record
 import com.heerkirov.animation.model.data.ScatterRecord
 import com.heerkirov.animation.util.ktorm.json
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.*
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.*
 
 object Records : BaseTable<Record>("record") {
     val id = long("id").primaryKey()

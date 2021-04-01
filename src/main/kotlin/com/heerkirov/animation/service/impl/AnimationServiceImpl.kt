@@ -14,11 +14,11 @@ import com.heerkirov.animation.service.AnimationService
 import com.heerkirov.animation.service.manager.*
 import com.heerkirov.animation.util.*
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.find
-import me.liuwj.ktorm.entity.sequenceOf
-import me.liuwj.ktorm.support.postgresql.ilike
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
+import org.ktorm.entity.find
+import org.ktorm.entity.sequenceOf
+import org.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -164,27 +164,27 @@ class AnimationServiceImpl(@Autowired private val database: Database,
         }
 
         val id = database.insertAndGenerateKey(Animations) {
-            it.title to form.title
-            it.originTitle to if(form.originTitle?.isNotBlank() == true) form.originTitle else null
-            it.otherTitle to if(form.otherTitle?.isNotBlank() == true) form.otherTitle else null
-            it.publishType to form.publishType
-            it.publishTime to publishTime
-            it.episodeDuration to form.episodeDuration
-            it.totalEpisodes to form.totalEpisodes
-            it.publishedEpisodes to publishedEpisodes
-            it.publishedRecord to publishedRecord
-            it.publishPlan to publishPlan
-            it.introduction to if(form.introduction?.isNotBlank() == true) form.introduction else null
-            it.keyword to if(form.keyword?.isNotBlank() == true) form.keyword else null
-            it.sexLimitLevel to form.sexLimitLevel
-            it.violenceLimitLevel to form.violenceLimitLevel
-            it.originalWorkType to form.originalWorkType
-            it.relations to emptyMap()
-            it.relationsTopology to emptyMap()
-            it.createTime to now
-            it.updateTime to now
-            it.creator to creator.id
-            it.updater to creator.id
+            set(it.title, form.title)
+            set(it.originTitle, if(form.originTitle?.isNotBlank() == true) form.originTitle else null)
+            set(it.otherTitle, if(form.otherTitle?.isNotBlank() == true) form.otherTitle else null)
+            set(it.publishType, form.publishType)
+            set(it.publishTime, publishTime)
+            set(it.episodeDuration, form.episodeDuration)
+            set(it.totalEpisodes, form.totalEpisodes)
+            set(it.publishedEpisodes, publishedEpisodes)
+            set(it.publishedRecord, publishedRecord)
+            set(it.publishPlan, publishPlan)
+            set(it.introduction, if(form.introduction?.isNotBlank() == true) form.introduction else null)
+            set(it.keyword, if(form.keyword?.isNotBlank() == true) form.keyword else null)
+            set(it.sexLimitLevel, form.sexLimitLevel)
+            set(it.violenceLimitLevel, form.violenceLimitLevel)
+            set(it.originalWorkType, form.originalWorkType)
+            set(it.relations, emptyMap())
+            set(it.relationsTopology, emptyMap())
+            set(it.createTime, now)
+            set(it.updateTime, now)
+            set(it.creator, creator.id)
+            set(it.updater, creator.id)
         } as Int
 
         if(form.tags.isNotEmpty()) {
@@ -210,21 +210,21 @@ class AnimationServiceImpl(@Autowired private val database: Database,
 
         val row = database.update(Animations) {
             where { it.id eq id }
-            it.updateTime to now
-            it.updater to updater.id
-            if(form.title != null) it.title to form.title
-            if(form.originTitle != null) it.originTitle to if(form.originTitle.isNotBlank()) form.originTitle else null
-            if(form.otherTitle != null) it.otherTitle to if(form.otherTitle.isNotBlank()) form.otherTitle else null
-            if(form.introduction != null) it.introduction to if(form.introduction.isNotBlank()) form.introduction else null
-            if(form.keyword != null) it.keyword to if(form.keyword.isNotBlank()) form.keyword else null
-            if(form.sexLimitLevel != null) it.sexLimitLevel to form.sexLimitLevel
-            if(form.violenceLimitLevel != null) it.violenceLimitLevel to form.violenceLimitLevel
-            if(form.originalWorkType != null) it.originalWorkType to form.originalWorkType
-            if(form.publishType != null) it.publishType to form.publishType
-            if(form.episodeDuration != null) it.episodeDuration to form.episodeDuration
+            set(it.updateTime, now)
+            set(it.updater, updater.id)
+            if(form.title != null) set(it.title, form.title)
+            if(form.originTitle != null) set(it.originTitle, if(form.originTitle.isNotBlank()) form.originTitle else null)
+            if(form.otherTitle != null) set(it.otherTitle, if(form.otherTitle.isNotBlank()) form.otherTitle else null)
+            if(form.introduction != null) set(it.introduction, if(form.introduction.isNotBlank()) form.introduction else null)
+            if(form.keyword != null) set(it.keyword, if(form.keyword.isNotBlank()) form.keyword else null)
+            if(form.sexLimitLevel != null) set(it.sexLimitLevel, form.sexLimitLevel)
+            if(form.violenceLimitLevel != null) set(it.violenceLimitLevel, form.violenceLimitLevel)
+            if(form.originalWorkType != null) set(it.originalWorkType, form.originalWorkType)
+            if(form.publishType != null) set(it.publishType, form.publishType)
+            if(form.episodeDuration != null) set(it.episodeDuration, form.episodeDuration)
 
             if(form.publishTime != null) {
-                it.publishTime to (form.publishTime.parseDateMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' must be 'yyyy-MM'."))
+                set(it.publishTime, form.publishTime.parseDateMonth() ?: throw BadRequestException(ErrCode.PARAM_ERROR, "Param 'publish_time' must be 'yyyy-MM'."))
             }
 
             if(form.totalEpisodes != null || form.publishedEpisodes != null || form.publishPlan != null) {
@@ -240,10 +240,10 @@ class AnimationServiceImpl(@Autowired private val database: Database,
                 val (publishedEpisodes, publishPlan, publishedRecord) = animationProcessor.processQuantityAndPlan(
                         totalEpisodes, form.publishedEpisodes ?: oldPublishedEpisodes,
                         form.publishPlan ?: oldPublishPlan, oldPublishedRecord, now)
-                it.totalEpisodes to totalEpisodes
-                it.publishedEpisodes to publishedEpisodes
-                it.publishPlan to publishPlan
-                it.publishedRecord to publishedRecord
+                set(it.totalEpisodes, totalEpisodes)
+                set(it.publishedEpisodes, publishedEpisodes)
+                set(it.publishPlan, publishPlan)
+                set(it.publishedRecord, publishedRecord)
 
                 if(totalEpisodes != oldTotalEpisodes || publishedEpisodes != oldPublishedEpisodes) {
                     recordProcessor.updateRecord(id, totalEpisodes, publishedEpisodes, oldTotalEpisodes, oldPublishedEpisodes)

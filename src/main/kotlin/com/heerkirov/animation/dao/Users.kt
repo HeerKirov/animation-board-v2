@@ -3,8 +3,8 @@ package com.heerkirov.animation.dao
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.model.data.UserSetting
 import com.heerkirov.animation.util.ktorm.json
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.*
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.*
 
 object Users : BaseTable<User>("user") {
     val id = int("id").primaryKey()

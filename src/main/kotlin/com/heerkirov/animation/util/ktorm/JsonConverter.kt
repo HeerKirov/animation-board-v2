@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.heerkirov.animation.enums.RelationType
 import com.heerkirov.animation.enums.toRelationType
 import com.heerkirov.animation.util.*
-import me.liuwj.ktorm.schema.TypeReference
+import org.ktorm.schema.TypeReference
 import java.time.LocalDateTime
 
 

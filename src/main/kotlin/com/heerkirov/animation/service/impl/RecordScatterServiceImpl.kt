@@ -18,10 +18,10 @@ import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.parseDateTime
 import com.heerkirov.animation.util.toDateTimeString
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.find
-import me.liuwj.ktorm.entity.sequenceOf
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
+import org.ktorm.entity.find
+import org.ktorm.entity.sequenceOf
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -81,10 +81,10 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
 
         database.update(Records) {
             where { it.id eq recordId }
-            it.scatterRecord to newWatchedRecord
-            it.lastActiveTime to now
-            it.lastActiveEvent to ActiveEvent(ActiveEventType.WATCH_EPISODE, listOf(episode))
-            it.updateTime to now
+            set(it.scatterRecord, newWatchedRecord)
+            set(it.lastActiveTime, now)
+            set(it.lastActiveEvent, ActiveEvent(ActiveEventType.WATCH_EPISODE, listOf(episode)))
+            set(it.updateTime, now)
         }
     }
 
@@ -112,8 +112,8 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
         val recordId = rowSet[Records.id]!!
         database.update(Records) {
             where { it.id eq recordId }
-            it.scatterRecord to newRecord
-            it.updateTime to now
+            set(it.scatterRecord, newRecord)
+            set(it.updateTime, now)
         }
     }
 
@@ -143,19 +143,19 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
             }
 
             database.insert(RecordProgresses) {
-                it.recordId to recordId
-                it.ordinal to progressCount + 1
-                it.watchedEpisodes to groupedList.size
-                it.watchedRecord to groupedList
-                it.startTime to groupedList.minOrNull()!!
-                it.finishTime to if(groupedList.size >= totalEpisodes) groupedList.maxOrNull()!! else null
+                set(it.recordId, recordId)
+                set(it.ordinal, progressCount + 1)
+                set(it.watchedEpisodes, groupedList.size)
+                set(it.watchedRecord, groupedList)
+                set(it.startTime, groupedList.minOrNull()!!)
+                set(it.finishTime, if(groupedList.size >= totalEpisodes) groupedList.maxOrNull()!! else null)
             }
 
             database.update(Records) {
                 where { it.id eq recordId }
-                it.progressCount to progressCount + 1
-                it.scatterRecord to newScatterRecord
-                it.updateTime to now
+                set(it.progressCount, progressCount + 1)
+                set(it.scatterRecord, newScatterRecord)
+                set(it.updateTime, now)
             }
 
             return ScatterGroupRes(ScatterGroupRes.GroupToType.NEW, progressCount + 1, groupedList.size, groupedList.size)
@@ -171,15 +171,15 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
 
             database.update(RecordProgresses) {
                 where { it.id eq progress.id }
-                it.watchedEpisodes to watchedEpisodes
-                it.watchedRecord to recordProcessor.calculateProgressWatchedRecord(progress.watchedRecord, progress.watchedEpisodes, progress.watchedEpisodes, now) + groupedList
-                if(watchedEpisodes >= totalEpisodes) it.finishTime to groupedList.maxOrNull()!!
+                set(it.watchedEpisodes, watchedEpisodes)
+                set(it.watchedRecord, recordProcessor.calculateProgressWatchedRecord(progress.watchedRecord, progress.watchedEpisodes, progress.watchedEpisodes, now) + groupedList)
+                if(watchedEpisodes >= totalEpisodes) set(it.finishTime, groupedList.maxOrNull()!!)
             }
 
             database.update(Records) {
                 where { it.id eq recordId }
-                it.scatterRecord to newScatterRecord
-                it.updateTime to now
+                set(it.scatterRecord, newScatterRecord)
+                set(it.updateTime, now)
             }
 
             return ScatterGroupRes(ScatterGroupRes.GroupToType.CURRENT, progress.ordinal, watchedEpisodes, groupedList.size)

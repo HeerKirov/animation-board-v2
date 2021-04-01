@@ -7,8 +7,8 @@ import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.model.data.User
 import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -38,8 +38,8 @@ class AnimationTagProcessor(@Autowired private val database: Database) {
         database.batchInsert(AnimationTagRelations) {
             for (addId in addIds) {
                 item {
-                    it.animationId to animationId
-                    it.tagId to addId
+                    set(it.animationId, animationId)
+                    set(it.tagId, addId)
                 }
             }
         }
@@ -48,7 +48,7 @@ class AnimationTagProcessor(@Autowired private val database: Database) {
             for (deleteId in deleteIds) {
                 item {
                     where { it.id eq deleteId }
-                    it.animationCount to (it.animationCount minus 1)
+                    set(it.animationCount, it.animationCount minus 1)
                 }
             }
         }
@@ -56,7 +56,7 @@ class AnimationTagProcessor(@Autowired private val database: Database) {
             for (addId in addIds) {
                 item {
                     where { it.id eq addId }
-                    it.animationCount to (it.animationCount plus 1)
+                    set(it.animationCount, it.animationCount plus 1)
                 }
             }
         }
@@ -100,12 +100,12 @@ class AnimationTagProcessor(@Autowired private val database: Database) {
                         if(!nameRowSet.containsKey(name)) {
                             creatingList += name
                             item {
-                                it.name to name
-                                it.introduction to ""
-                                it.createTime to now
-                                it.updateTime to now
-                                it.creator to user.id
-                                it.updater to user.id
+                                set(it.name, name)
+                                set(it.introduction, "")
+                                set(it.createTime, now)
+                                set(it.updateTime, now)
+                                set(it.creator, user.id)
+                                set(it.updater, user.id)
                             }
                         }
                     }
@@ -133,7 +133,7 @@ class AnimationTagProcessor(@Autowired private val database: Database) {
             for (row in rowSets) {
                 item {
                     where { it.id eq row.first }
-                    it.animationCount to row.second
+                    set(it.animationCount, row.second)
                 }
             }
         }

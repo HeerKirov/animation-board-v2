@@ -8,8 +8,8 @@ import com.heerkirov.animation.service.manager.MessageProcessor
 import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.filterInto
 import com.heerkirov.animation.util.logger
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -66,9 +66,9 @@ class AnimationUpdateService(@Autowired private val database: Database,
             for ((id, _, publishedEpisodes, publishPlan, publishedRecord) in updatedList) {
                 item {
                     where { it.id eq id }
-                    it.publishedEpisodes to publishedEpisodes
-                    it.publishPlan to publishPlan
-                    it.publishedRecord to publishedRecord
+                    set(it.publishedEpisodes, publishedEpisodes)
+                    set(it.publishPlan, publishPlan)
+                    set(it.publishedRecord, publishedRecord)
                 }
             }
         }

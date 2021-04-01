@@ -9,8 +9,8 @@ import com.heerkirov.animation.service.MessageService
 import com.heerkirov.animation.service.manager.MessageProcessor
 import com.heerkirov.animation.util.toDateTimeString
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -36,7 +36,7 @@ class MessageServiceImpl(@Autowired private val database: Database,
             for (message in messages) {
                 item {
                     where { it.id eq message.id }
-                    it.read to true
+                    set(it.read, true)
                 }
             }
         }

@@ -3,7 +3,7 @@ package com.heerkirov.animation.service.manager
 import com.heerkirov.animation.enums.RecordStatus
 import com.heerkirov.animation.model.result.DiaryItem
 import com.heerkirov.animation.util.*
-import me.liuwj.ktorm.entity.Tuple4
+import org.ktorm.entity.Tuple4
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime

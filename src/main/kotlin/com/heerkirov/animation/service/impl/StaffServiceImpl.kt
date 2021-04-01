@@ -15,11 +15,11 @@ import com.heerkirov.animation.service.StaffService
 import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.OrderTranslator
 import com.heerkirov.animation.util.orderBy
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.find
-import me.liuwj.ktorm.entity.sequenceOf
-import me.liuwj.ktorm.support.postgresql.ilike
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
+import org.ktorm.entity.find
+import org.ktorm.entity.sequenceOf
+import org.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -64,15 +64,15 @@ class StaffServiceImpl(@Autowired private val database: Database) : StaffService
 
         val now = DateTimeUtil.now()
         return database.insertAndGenerateKey(Staffs) {
-            it.name to staffForm.name
-            it.originName to if(staffForm.originName?.isNotBlank() == true) staffForm.originName else null
-            it.remark to if(staffForm.remark?.isNotBlank() == true) staffForm.remark else null
-            it.isOrganization to staffForm.isOrganization
-            it.occupation to staffForm.occupation
-            it.createTime to now
-            it.updateTime to now
-            it.creator to creator.id
-            it.updater to creator.id
+            set(it.name, staffForm.name)
+            set(it.originName, if(staffForm.originName?.isNotBlank() == true) staffForm.originName else null)
+            set(it.remark, if(staffForm.remark?.isNotBlank() == true) staffForm.remark else null)
+            set(it.isOrganization, staffForm.isOrganization)
+            set(it.occupation, staffForm.occupation)
+            set(it.createTime, now)
+            set(it.updateTime, now)
+            set(it.creator, creator.id)
+            set(it.updater, creator.id)
         } as Int
     }
 
@@ -81,13 +81,13 @@ class StaffServiceImpl(@Autowired private val database: Database) : StaffService
             throw BadRequestException(ErrCode.ALREADY_EXISTS, "Staff with name '${staffForm.name}' is already exists.")
         }
         if(database.update(Staffs) {
-            it.name to staffForm.name
-            it.originName to if(staffForm.originName?.isNotBlank() == true) staffForm.originName else null
-            it.remark to if(staffForm.remark?.isNotBlank() == true) staffForm.remark else null
-            it.isOrganization to staffForm.isOrganization
-            it.occupation to staffForm.occupation
-            it.updateTime to DateTimeUtil.now()
-            it.updater to updater.id
+            set(it.name, staffForm.name)
+            set(it.originName, if(staffForm.originName?.isNotBlank() == true) staffForm.originName else null)
+            set(it.remark, if(staffForm.remark?.isNotBlank() == true) staffForm.remark else null)
+            set(it.isOrganization, staffForm.isOrganization)
+            set(it.occupation, staffForm.occupation)
+            set(it.updateTime, DateTimeUtil.now())
+            set(it.updater, updater.id)
             where { it.id eq id }
         } == 0) throw NotFoundException("Staff not found.")
     }

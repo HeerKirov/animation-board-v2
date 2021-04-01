@@ -5,11 +5,11 @@ import com.heerkirov.animation.dao.Records
 import com.heerkirov.animation.enums.ActiveEventType
 import com.heerkirov.animation.model.data.ActiveEvent
 import com.heerkirov.animation.util.logger
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.insert
-import me.liuwj.ktorm.dsl.insertAndGenerateKey
-import me.liuwj.ktorm.entity.sequenceOf
-import me.liuwj.ktorm.entity.sortedBy
+import org.ktorm.database.Database
+import org.ktorm.dsl.insert
+import org.ktorm.dsl.insertAndGenerateKey
+import org.ktorm.entity.sequenceOf
+import org.ktorm.entity.sortedBy
 
 class TransformDiary(private val userLoader: UserLoader,
                      private val v1Database: Database,
@@ -21,26 +21,26 @@ class TransformDiary(private val userLoader: UserLoader,
         for (v1Diary in v1Database.sequenceOf(V1Diaries).sortedBy { it.id }) {
             if(v1Diary.status != "GIVE_UP") {
                 val id = database.insertAndGenerateKey(Records) {
-                    it.ownerId to userLoader[v1Diary.ownerId].id
-                    it.animationId to animationIdMap[v1Diary.animationId]
-                    it.seenOriginal to v1Diary.watchOriginalWork
-                    it.inDiary to (v1Diary.status == "READY" || v1Diary.status == "WATCHING")
-                    it.scatterRecord to emptyList()
-                    it.progressCount to 1
+                    set(it.ownerId, userLoader[v1Diary.ownerId].id)
+                    set(it.animationId, animationIdMap[v1Diary.animationId])
+                    set(it.seenOriginal, v1Diary.watchOriginalWork)
+                    set(it.inDiary, v1Diary.status == "READY" || v1Diary.status == "WATCHING")
+                    set(it.scatterRecord, emptyList())
+                    set(it.progressCount, 1)
 
-                    it.lastActiveEvent to ActiveEvent(ActiveEventType.CREATE_RECORD, null)
-                    it.lastActiveTime to null
-                    it.createTime to v1Diary.createTime.toV2Time()
-                    it.updateTime to (v1Diary.updateTime?.toV2Time() ?: v1Diary.createTime.toV2Time())
+                    set(it.lastActiveEvent, ActiveEvent(ActiveEventType.CREATE_RECORD, null))
+                    set(it.lastActiveTime, null)
+                    set(it.createTime, v1Diary.createTime.toV2Time())
+                    set(it.updateTime, v1Diary.updateTime?.toV2Time() ?: v1Diary.createTime.toV2Time())
                 } as Long
 
                 database.insert(RecordProgresses) {
-                    it.recordId to id
-                    it.ordinal to 1
-                    it.watchedEpisodes to v1Diary.watchedQuantity
-                    it.watchedRecord to v1Diary.watchedRecord.map { t -> t?.toV2Time() }
-                    it.startTime to v1Diary.subscriptionTime?.toV2Time()
-                    it.finishTime to v1Diary.finishTime?.toV2Time()
+                    set(it.recordId, id)
+                    set(it.ordinal, 1)
+                    set(it.watchedEpisodes, v1Diary.watchedQuantity)
+                    set(it.watchedRecord, v1Diary.watchedRecord.map { t -> t?.toV2Time() })
+                    set(it.startTime, v1Diary.subscriptionTime?.toV2Time())
+                    set(it.finishTime, v1Diary.finishTime?.toV2Time())
                 }
                 num += 1
             }

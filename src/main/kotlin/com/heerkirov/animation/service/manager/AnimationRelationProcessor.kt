@@ -6,8 +6,8 @@ import com.heerkirov.animation.enums.RelationType
 import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.util.relation.RelationGraph
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -71,7 +71,7 @@ class AnimationRelationProcessor(@Autowired private val database: Database) {
                     val newTopology = graph[element].map { (k, v) -> Pair(k, v.map { it.id }) }.toMap()
                     if(!compareRelationEquals(element.relationsTopology, newTopology)) {
                         item {
-                            it.relationsTopology to newTopology
+                            set(it.relationsTopology, newTopology)
                             where { it.id eq element.id }
                         }
                     }
@@ -80,8 +80,8 @@ class AnimationRelationProcessor(@Autowired private val database: Database) {
         }
         val newThisTopology = graph[thisAnimation].map { (k, v) -> Pair(k, v.map { it.id }) }.toMap()
         database.update(Animations) {
-            it.relations to newRelations
-            it.relationsTopology to newThisTopology
+            set(it.relations, newRelations)
+            set(it.relationsTopology, newThisTopology)
             where { it.id eq thisAnimation.id }
         }
     }
@@ -115,7 +115,7 @@ class AnimationRelationProcessor(@Autowired private val database: Database) {
                 if(topology.isNotEmpty()) {
                     item {
                         where { it.id eq element.id }
-                        it.relationsTopology to topology
+                        set(it.relationsTopology, topology)
                     }
                     num += 1
                 }
@@ -162,8 +162,8 @@ class AnimationRelationProcessor(@Autowired private val database: Database) {
                 if(newRelations != null || !compareRelationEquals(element.relationsTopology, newTopology)) {
                     item {
                         where { it.id eq element.id }
-                        it.relations to (newRelations ?: element.relations)
-                        it.relationsTopology to newTopology
+                        set(it.relations, newRelations ?: element.relations)
+                        set(it.relationsTopology, newTopology)
                     }
                 }
             }

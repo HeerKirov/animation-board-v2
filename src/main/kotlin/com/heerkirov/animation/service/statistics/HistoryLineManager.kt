@@ -11,8 +11,8 @@ import com.heerkirov.animation.model.result.HistoryLineRes
 import com.heerkirov.animation.model.result.SeasonOverviewRes
 import com.heerkirov.animation.util.*
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.lang.RuntimeException
@@ -52,8 +52,8 @@ class HistoryLineManager(@Autowired private val database: Database) {
                     val chaseAnimations = items.sumBy { it.chaseAnimations ?: 0 }
                     val supplementAnimations = items.sumBy { it.supplementAnimations ?: 0 }
                     val scoredAnimations = items.sumBy { it.scoredAnimations }
-                    val maxScore = items.asSequence().map { it.maxScore }.filterNotNull().max()
-                    val minScore = items.asSequence().map { it.minScore }.filterNotNull().min()
+                    val maxScore = items.asSequence().map { it.maxScore }.filterNotNull().maxOrNull()
+                    val minScore = items.asSequence().map { it.minScore }.filterNotNull().minOrNull()
                     val sumScore = items.asSequence().map { it.sumScore }.sum()
                     val avgScore = if(scoredAnimations == 0) null else { sumScore * 1.0 / scoredAnimations }
                     val scoreCounts = items.flatMap { it.scoreCounts?.toList() ?: emptyList() }
@@ -75,17 +75,17 @@ class HistoryLineManager(@Autowired private val database: Database) {
                 .firstOrNull()?.get(Statistics.id)
         if(id == null) {
             database.insert(Statistics) {
-                it.ownerId to user.id
-                it.type to StatisticType.HISTORY
-                it.key to null
-                it.content to modal.toJSONString()
-                it.updateTime to DateTimeUtil.now()
+                set(it.ownerId, user.id)
+                set(it.type, StatisticType.HISTORY)
+                set(it.key, null)
+                set(it.content, modal.toJSONString())
+                set(it.updateTime, DateTimeUtil.now())
             }
         }else{
             database.update(Statistics) {
                 where { it.id eq id }
-                it.content to modal.toJSONString()
-                it.updateTime to DateTimeUtil.now()
+                set(it.content, modal.toJSONString())
+                set(it.updateTime, DateTimeUtil.now())
             }
         }
     }
@@ -114,8 +114,8 @@ class HistoryLineManager(@Autowired private val database: Database) {
                 .groupBy { Pair(it.publishTime.year, (it.publishTime.monthValue - 1) / 3 + 1) }
                 .mapValues { (pair, items) ->
                     val scoredItems = items.filter { it.score != null }.map { it.score!! }
-                    val maxScore = scoredItems.max()
-                    val minScore = scoredItems.min()
+                    val maxScore = scoredItems.maxOrNull()
+                    val minScore = scoredItems.minOrNull()
                     val sumScore = scoredItems.sum()
                     val scoreCounts = scoredItems.groupingBy { it }.eachCount()
                     HistoryLineModal.Item(pair.first, pair.second,
@@ -123,8 +123,8 @@ class HistoryLineManager(@Autowired private val database: Database) {
                             scoredItems.size, maxScore, minScore, sumScore, scoreCounts)
                 }
 
-        val (beginYear, beginSeason) = rowSets.keys.minBy { compValue(it.first, it.second) } ?: Pair(null, null)
-        val (endYear, endSeason) = rowSets.keys.maxBy { compValue(it.first, it.second) } ?: Pair(null, null)
+        val (beginYear, beginSeason) = rowSets.keys.minByOrNull { compValue(it.first, it.second) } ?: Pair(null, null)
+        val (endYear, endSeason) = rowSets.keys.maxByOrNull { compValue(it.first, it.second) } ?: Pair(null, null)
         if(beginYear != null && beginSeason != null && endYear != null && endSeason != null) {
             val items = stepFor(compValue(beginYear, beginSeason), compValue(endYear, endSeason)) { it + 1 }.asSequence()
                     .map { Pair(it / 4, it % 4 + 1) }

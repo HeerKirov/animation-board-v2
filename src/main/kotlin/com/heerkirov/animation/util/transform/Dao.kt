@@ -2,8 +2,8 @@ package com.heerkirov.animation.util.transform
 
 import com.heerkirov.animation.util.ktorm.array
 import com.heerkirov.animation.util.ktorm.jsonString
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.*
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.*
 
 
 object V1Animations : BaseTable<V1Animation>("api_animation") {

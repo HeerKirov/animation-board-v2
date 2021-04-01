@@ -1,10 +1,10 @@
 package com.heerkirov.animation.dao
 
 import com.heerkirov.animation.model.data.AnimationTagRelation
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.BaseTable
-import me.liuwj.ktorm.schema.int
-import me.liuwj.ktorm.schema.long
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.BaseTable
+import org.ktorm.schema.int
+import org.ktorm.schema.long
 
 object AnimationTagRelations : BaseTable<AnimationTagRelation>("animation_tag_relation") {
     val id = long("id").primaryKey()

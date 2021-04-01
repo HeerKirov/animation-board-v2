@@ -12,8 +12,8 @@ import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.parseJSONObject
 import com.heerkirov.animation.util.toJSONString
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -35,17 +35,17 @@ class OverviewManager(@Autowired private val database: Database) {
                 .firstOrNull()?.get(Statistics.id)
         if(id == null) {
             database.insert(Statistics) {
-                it.ownerId to user.id
-                it.type to StatisticType.OVERVIEW
-                it.key to null
-                it.content to modal.toJSONString()
-                it.updateTime to DateTimeUtil.now()
+                set(it.ownerId, user.id)
+                set(it.type, StatisticType.OVERVIEW)
+                set(it.key, null)
+                set(it.content, modal.toJSONString())
+                set(it.updateTime, DateTimeUtil.now())
             }
         }else{
             database.update(Statistics) {
                 where { it.id eq id }
-                it.content to modal.toJSONString()
-                it.updateTime to DateTimeUtil.now()
+                set(it.content, modal.toJSONString())
+                set(it.updateTime, DateTimeUtil.now())
             }
         }
     }

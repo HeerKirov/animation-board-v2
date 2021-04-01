@@ -7,8 +7,8 @@ import com.heerkirov.animation.enums.ViolenceLimitLevel
 import com.heerkirov.animation.model.data.Animation
 import com.heerkirov.animation.util.ktorm.*
 import com.heerkirov.animation.util.ktorm.enum
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.*
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.*
 
 object Animations : BaseTable<Animation>("animation") {
     val id = int("id").primaryKey()

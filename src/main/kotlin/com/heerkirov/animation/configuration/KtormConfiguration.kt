@@ -1,6 +1,6 @@
 package com.heerkirov.animation.configuration
 
-import me.liuwj.ktorm.database.Database
+import org.ktorm.database.Database
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

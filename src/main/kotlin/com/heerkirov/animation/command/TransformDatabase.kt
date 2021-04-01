@@ -2,7 +2,7 @@ package com.heerkirov.animation.command
 
 import com.heerkirov.animation.util.loadProperties
 import com.heerkirov.animation.util.transform.transformV1ToV2
-import me.liuwj.ktorm.database.Database
+import org.ktorm.database.Database
 
 /**
  * @since 0.1.0

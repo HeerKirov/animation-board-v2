@@ -4,8 +4,8 @@ import com.heerkirov.animation.dao.Animations
 import com.heerkirov.animation.dao.RecordProgresses
 import com.heerkirov.animation.dao.Records
 import com.heerkirov.animation.util.DateTimeUtil
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -35,8 +35,8 @@ class AnimationRecordProcessor(@Autowired private val database: Database) {
                     val newFinishTime = if(newWatchedEpisodes >= totalEpisodes) watchedRecord[newWatchedEpisodes] ?: now else null
                     item {
                         where { it.id eq id }
-                        it.watchedEpisodes to newWatchedEpisodes
-                        it.finishTime to newFinishTime
+                        set(it.watchedEpisodes, newWatchedEpisodes)
+                        set(it.finishTime, newFinishTime)
                     }
                 }
             }
@@ -53,7 +53,7 @@ class AnimationRecordProcessor(@Autowired private val database: Database) {
                     val id = row[RecordProgresses.id]!!
                     item {
                         where { it.id eq id }
-                        it.finishTime to null
+                        set(it.finishTime, null)
                     }
                 }
             }

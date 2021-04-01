@@ -6,13 +6,13 @@ import com.heerkirov.animation.service.manager.AnimationRelationProcessor
 import com.heerkirov.animation.util.logger
 import com.heerkirov.animation.util.map
 import com.heerkirov.animation.util.parseJsonNode
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.batchUpdate
-import me.liuwj.ktorm.dsl.eq
-import me.liuwj.ktorm.dsl.insertAndGenerateKey
-import me.liuwj.ktorm.entity.sequenceOf
-import me.liuwj.ktorm.entity.sortedBy
-import me.liuwj.ktorm.entity.toList
+import org.ktorm.database.Database
+import org.ktorm.dsl.batchUpdate
+import org.ktorm.dsl.eq
+import org.ktorm.dsl.insertAndGenerateKey
+import org.ktorm.entity.sequenceOf
+import org.ktorm.entity.sortedBy
+import org.ktorm.entity.toList
 
 class TransformAnimation(private val userLoader: UserLoader,
                          private val v1Database: Database,
@@ -25,31 +25,31 @@ class TransformAnimation(private val userLoader: UserLoader,
         val v1Animations = v1Database.sequenceOf(V1Animations).sortedBy { it.id }.toList()
         for (v1Animation in v1Animations) {
             val id = database.insertAndGenerateKey(Animations) {
-                it.title to v1Animation.title
-                it.originTitle to v1Animation.originTitle
-                it.otherTitle to v1Animation.otherTitle
-                it.cover to v1Animation.cover
+                set(it.title, v1Animation.title)
+                set(it.originTitle, v1Animation.originTitle)
+                set(it.otherTitle, v1Animation.otherTitle)
+                set(it.cover, v1Animation.cover)
 
-                it.introduction to v1Animation.introduction
-                it.keyword to v1Animation.keyword
-                it.originalWorkType to v1Animation.originalWorkType?.convertOriginalWorkType()
-                it.sexLimitLevel to v1Animation.limitLevel?.convertSexLimitLevel()
-                it.violenceLimitLevel to v1Animation.limitLevel?.convertViolenceLimitLevel()
-                it.publishType to v1Animation.publishType?.convertPublishType()
-                it.publishTime to v1Animation.publishTime
-                it.episodeDuration to v1Animation.duration
-                it.totalEpisodes to (v1Animation.sumQuantity ?: 1)
-                it.publishedEpisodes to (v1Animation.publishedQuantity ?: 0)
-                it.publishedRecord to v1Animation.publishedRecord.map { t -> t?.toV2Time() }
-                it.publishPlan to v1Animation.publishPlan.filterNotNull().map { t -> t.toV2Time() }
+                set(it.introduction, v1Animation.introduction)
+                set(it.keyword, v1Animation.keyword)
+                set(it.originalWorkType, v1Animation.originalWorkType?.convertOriginalWorkType())
+                set(it.sexLimitLevel, v1Animation.limitLevel?.convertSexLimitLevel())
+                set(it.violenceLimitLevel, v1Animation.limitLevel?.convertViolenceLimitLevel())
+                set(it.publishType, v1Animation.publishType?.convertPublishType())
+                set(it.publishTime, v1Animation.publishTime)
+                set(it.episodeDuration, v1Animation.duration)
+                set(it.totalEpisodes, v1Animation.sumQuantity ?: 1)
+                set(it.publishedEpisodes, v1Animation.publishedQuantity ?: 0)
+                set(it.publishedRecord, v1Animation.publishedRecord.map { t -> t?.toV2Time() })
+                set(it.publishPlan, v1Animation.publishPlan.filterNotNull().map { t -> t.toV2Time() })
 
-                it.relations to emptyMap()
-                it.relationsTopology to emptyMap()
+                set(it.relations, emptyMap())
+                set(it.relationsTopology, emptyMap())
 
-                it.createTime to v1Animation.createTime.toV2Time()
-                it.updateTime to (v1Animation.updateTime?.toV2Time() ?: v1Animation.createTime.toV2Time())
-                it.creator to userLoader[v1Animation.creator].id
-                it.updater to userLoader[v1Animation.updater ?: v1Animation.creator].id
+                set(it.createTime, v1Animation.createTime.toV2Time())
+                set(it.updateTime, v1Animation.updateTime?.toV2Time() ?: v1Animation.createTime.toV2Time())
+                set(it.creator, userLoader[v1Animation.creator].id)
+                set(it.updater, userLoader[v1Animation.updater ?: v1Animation.creator].id)
             } as Int
             idMap[v1Animation.id] = id
         }
@@ -59,7 +59,7 @@ class TransformAnimation(private val userLoader: UserLoader,
             for (v1Animation in v1Animations) {
                 item {
                     where { it.id eq idMap[v1Animation.id]!! }
-                    it.relations to v1Animation.relations.convertRelations(idMap)
+                    set(it.relations, v1Animation.relations.convertRelations(idMap))
                 }
             }
         }

@@ -12,8 +12,8 @@ import com.heerkirov.animation.exception.NotFoundException
 import com.heerkirov.animation.service.CoverService
 import com.heerkirov.animation.util.logger
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -61,7 +61,7 @@ class CoverServiceImpl(@Autowired private val oss: OSS,
                     throw NotFoundException("Animation not found.")
                 }
                 database.update(Animations) {
-                    it.cover to filename
+                    set(it.cover, filename)
                     where { it.id eq id }
                 }
                 oldCover
@@ -73,7 +73,7 @@ class CoverServiceImpl(@Autowired private val oss: OSS,
                     throw NotFoundException("Staff not found.")
                 }
                 database.update(Staffs) {
-                    it.cover to filename
+                    set(it.cover, filename)
                     where { it.id eq id }
                 }
                 oldCover

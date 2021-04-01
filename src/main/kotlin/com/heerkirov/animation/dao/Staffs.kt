@@ -3,8 +3,8 @@ package com.heerkirov.animation.dao
 import com.heerkirov.animation.enums.StaffOccupation
 import com.heerkirov.animation.model.data.Staff
 import com.heerkirov.animation.util.ktorm.enum
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.*
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.*
 
 object Staffs : BaseTable<Staff>("staff") {
     val id = int("id").primaryKey()

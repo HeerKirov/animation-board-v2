@@ -3,10 +3,10 @@ package com.heerkirov.animation.util.ktorm
 import com.heerkirov.animation.util.objectMapper
 import com.heerkirov.animation.util.parseJsonNode
 import com.heerkirov.animation.util.toJSONString
-import me.liuwj.ktorm.schema.BaseTable
-import me.liuwj.ktorm.schema.Column
-import me.liuwj.ktorm.schema.SqlType
-import me.liuwj.ktorm.schema.TypeReference
+import org.ktorm.schema.BaseTable
+import org.ktorm.schema.Column
+import org.ktorm.schema.SqlType
+import org.ktorm.schema.TypeReference
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.Types

@@ -15,8 +15,8 @@ import com.heerkirov.animation.model.result.SeasonRes
 import com.heerkirov.animation.model.result.toResWith
 import com.heerkirov.animation.util.*
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.time.*
@@ -45,7 +45,7 @@ class SeasonManager(@Autowired private val database: Database) {
                     val item = SeasonLineRes.Item(year, season, content.totalAnimations, content.maxScore, content.minScore, content.avgScore, content.avgPositivity)
                     Pair(item, updateTime)
                 }
-        val updateTime = items.asSequence().map { it.second }.max()?.toDateTimeString()
+        val updateTime = items.asSequence().map { it.second }.maxOrNull()?.toDateTimeString()
 
         return SeasonLineRes(items.map { it.first }, updateTime)
     }
@@ -66,17 +66,17 @@ class SeasonManager(@Autowired private val database: Database) {
                 .firstOrNull()?.get(Statistics.id)
         if(id == null) {
             database.insert(Statistics) {
-                it.ownerId to user.id
-                it.type to StatisticType.SEASON
-                it.key to key
-                it.content to modal.toJSONString()
-                it.updateTime to DateTimeUtil.now()
+                set(it.ownerId, user.id)
+                set(it.type, StatisticType.SEASON)
+                set(it.key, key)
+                set(it.content, modal.toJSONString())
+                set(it.updateTime, DateTimeUtil.now())
             }
         }else{
             database.update(Statistics) {
                 where { it.id eq id }
-                it.content to modal.toJSONString()
-                it.updateTime to DateTimeUtil.now()
+                set(it.content, modal.toJSONString())
+                set(it.updateTime, DateTimeUtil.now())
             }
         }
         return true
@@ -95,8 +95,8 @@ class SeasonManager(@Autowired private val database: Database) {
                     Pair(split[0].toInt(), split[1].toInt())
                 }.let { data ->
                     if(data.isNotEmpty()) {
-                        val min = data.minBy { compValue(it.first, it.second) }!!
-                        val max = data.maxBy { compValue(it.first, it.second) }!!
+                        val min = data.minByOrNull { compValue(it.first, it.second) }!!
+                        val max = data.maxByOrNull { compValue(it.first, it.second) }!!
                         SeasonOverviewModal(min.first, min.second, max.first, max.second)
                     }else{
                         SeasonOverviewModal(null, null, null, null)
@@ -104,15 +104,15 @@ class SeasonManager(@Autowired private val database: Database) {
                 }
 
         if (overview == null) database.insert(Statistics) {
-            it.ownerId to user.id
-            it.type to StatisticType.SEASON_OVERVIEW
-            it.key to null
-            it.content to bound.toJSONString()
-            it.updateTime to DateTimeUtil.now()
+            set(it.ownerId, user.id)
+            set(it.type, StatisticType.SEASON_OVERVIEW)
+            set(it.key, null)
+            set(it.content, bound.toJSONString())
+            set(it.updateTime, DateTimeUtil.now())
         } else database.update(Statistics) {
             where { it.id eq overview.first }
-            it.content to SeasonOverviewModal(bound.beginYear, bound.beginSeason, bound.endYear, bound.endSeason).toJSONString()
-            it.updateTime to DateTimeUtil.now()
+            set(it.content, SeasonOverviewModal(bound.beginYear, bound.beginSeason, bound.endYear, bound.endSeason).toJSONString())
+            set(it.updateTime, DateTimeUtil.now())
         }
     }
 
@@ -124,23 +124,23 @@ class SeasonManager(@Autowired private val database: Database) {
 
         when {
             overview == null -> database.insert(Statistics) {
-                it.ownerId to user.id
-                it.type to StatisticType.SEASON_OVERVIEW
-                it.key to null
-                it.content to SeasonOverviewModal(year, season, year, season).toJSONString()
-                it.updateTime to DateTimeUtil.now()
+                set(it.ownerId, user.id)
+                set(it.type, StatisticType.SEASON_OVERVIEW)
+                set(it.key, null)
+                set(it.content, SeasonOverviewModal(year, season, year, season).toJSONString())
+                set(it.updateTime, DateTimeUtil.now())
             }
             overview.second.beginYear == null || overview.second.beginSeason == null ||
                     compValue(year, season) < compValue(overview.second.beginYear!!, overview.second.beginSeason!!) -> database.update(Statistics) {
                 where { it.id eq overview.first }
-                it.content to SeasonOverviewModal(year, season, overview.second.endYear, overview.second.endSeason).toJSONString()
-                it.updateTime to DateTimeUtil.now()
+                set(it.content, SeasonOverviewModal(year, season, overview.second.endYear, overview.second.endSeason).toJSONString())
+                set(it.updateTime, DateTimeUtil.now())
             }
             overview.second.endYear == null || overview.second.endSeason == null ||
                     compValue(year, season) > compValue(overview.second.endYear!!, overview.second.endSeason!!) -> database.update(Statistics) {
                 where { it.id eq overview.first }
-                it.content to SeasonOverviewModal(overview.second.beginYear, overview.second.beginSeason, year, season).toJSONString()
-                it.updateTime to DateTimeUtil.now()
+                set(it.content, SeasonOverviewModal(overview.second.beginYear, overview.second.beginSeason, year, season).toJSONString())
+                set(it.updateTime, DateTimeUtil.now())
             }
         }
     }
@@ -203,8 +203,8 @@ class SeasonManager(@Autowired private val database: Database) {
         }
 
         //计算全部动画的最高分、最低分、平均分
-        val maxScore = rowSets.asSequence().map { it.score }.filterNotNull().max()
-        val minScore = rowSets.asSequence().map { it.score }.filterNotNull().min()
+        val maxScore = rowSets.asSequence().map { it.score }.filterNotNull().maxOrNull()
+        val minScore = rowSets.asSequence().map { it.score }.filterNotNull().minOrNull()
         val avgScore = rowSets.asSequence().map { it.score }.filterNotNull().average().let { if(it.isNaN()) null else it }
         //计算全部动画的平均及时度
         val avgPositivity = animations.asSequence().map { it.positivity }.filterNotNull().average().let { if(it.isNaN()) null else it }

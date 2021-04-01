@@ -3,8 +3,8 @@ package com.heerkirov.animation.command
 import com.aliyun.oss.OSSClientBuilder
 import com.heerkirov.animation.dao.Animations
 import com.heerkirov.animation.util.loadProperties
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 
 /**
  * @since 0.1.0

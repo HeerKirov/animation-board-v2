@@ -1,8 +1,8 @@
 package com.heerkirov.animation.dao
 
 import com.heerkirov.animation.model.data.Tag
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.*
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.*
 
 object Tags : BaseTable<Tag>("tag") {
     val id = int("id").primaryKey()

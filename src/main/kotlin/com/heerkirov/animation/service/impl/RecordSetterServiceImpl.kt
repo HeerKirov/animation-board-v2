@@ -18,10 +18,10 @@ import com.heerkirov.animation.service.manager.RecordProcessor
 import com.heerkirov.animation.util.DateTimeUtil
 import com.heerkirov.animation.util.toDateTimeString
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.find
-import me.liuwj.ktorm.entity.sequenceOf
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
+import org.ktorm.entity.find
+import org.ktorm.entity.sequenceOf
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -55,9 +55,9 @@ class RecordSetterServiceImpl(@Autowired private val database: Database) : Recor
 
         database.update(Records) {
             where { it.id eq record.id }
-            if(form.seenOriginal != null) it.seenOriginal to form.seenOriginal
-            if(form.inDiary != null) it.inDiary to form.inDiary
-            it.updateTime to now
+            if(form.seenOriginal != null) set(it.seenOriginal, form.seenOriginal)
+            if(form.inDiary != null) set(it.inDiary, form.inDiary)
+            set(it.updateTime, now)
         }
     }
 
@@ -74,27 +74,27 @@ class RecordSetterServiceImpl(@Autowired private val database: Database) : Recor
         val now = DateTimeUtil.now()
         //订阅模式创建。创建默认的第一条观看进度
         val id = database.insertAndGenerateKey(Records) {
-            it.ownerId to user.id
-            it.animationId to form.animationId
-            it.seenOriginal to false
-            it.inDiary to true
+            set(it.ownerId, user.id)
+            set(it.animationId, form.animationId)
+            set(it.seenOriginal, false)
+            set(it.inDiary, true)
 
-            it.progressCount to 1
-            it.scatterRecord to emptyList()
+            set(it.progressCount, 1)
+            set(it.scatterRecord, emptyList())
 
-            it.lastActiveTime to now
-            it.lastActiveEvent to ActiveEvent(ActiveEventType.CREATE_RECORD)
-            it.createTime to now
-            it.updateTime to now
+            set(it.lastActiveTime, now)
+            set(it.lastActiveEvent, ActiveEvent(ActiveEventType.CREATE_RECORD))
+            set(it.createTime, now)
+            set(it.updateTime, now)
         } as Long
 
         database.insert(RecordProgresses) {
-            it.recordId to id
-            it.ordinal to 1
-            it.watchedEpisodes to 0
-            it.watchedRecord to emptyList()
-            it.startTime to now
-            it.finishTime to null
+            set(it.recordId, id)
+            set(it.ordinal, 1)
+            set(it.watchedEpisodes, 0)
+            set(it.watchedRecord, emptyList())
+            set(it.startTime, now)
+            set(it.finishTime, null)
         }
     }
 
@@ -175,39 +175,39 @@ class RecordSetterServiceImpl(@Autowired private val database: Database) : Recor
 
         //补充模式创建。按照表单提供的记录创建多个进度
         val id = database.insertAndGenerateKey(Records) {
-            it.ownerId to user.id
-            it.animationId to form.animationId
-            it.seenOriginal to false
-            it.inDiary to (watchedEpisodes < totalEpisodes)    //当状态为完结时不放入日记
+            set(it.ownerId, user.id)
+            set(it.animationId, form.animationId)
+            set(it.seenOriginal, false)
+            set(it.inDiary, watchedEpisodes < totalEpisodes)    //当状态为完结时不放入日记
 
-            it.progressCount to form.progress.size
-            it.scatterRecord to emptyList()
+            set(it.progressCount, form.progress.size)
+            set(it.scatterRecord, emptyList())
 
-            it.lastActiveTime to now
-            it.lastActiveEvent to ActiveEvent(ActiveEventType.CREATE_RECORD)
-            it.createTime to now
-            it.updateTime to now
+            set(it.lastActiveTime, now)
+            set(it.lastActiveEvent, ActiveEvent(ActiveEventType.CREATE_RECORD))
+            set(it.createTime, now)
+            set(it.updateTime, now)
         } as Long
 
         for(i in form.progress.indices) {
             val progressForm = form.progress[i]
             if(i < form.progress.size - 1) {
                 database.insert(RecordProgresses) {
-                    it.recordId to id
-                    it.ordinal to (i + 1)
-                    it.watchedEpisodes to totalEpisodes
-                    it.watchedRecord to emptyList() //已完结的记录不需要再创建这个，不会再更新了
-                    it.startTime to progressForm.startTime
-                    it.finishTime to progressForm.finishTime
+                    set(it.recordId, id)
+                    set(it.ordinal, i + 1)
+                    set(it.watchedEpisodes, totalEpisodes)
+                    set(it.watchedRecord, emptyList()) //已完结的记录不需要再创建这个，不会再更新了
+                    set(it.startTime, progressForm.startTime)
+                    set(it.finishTime, progressForm.finishTime)
                 }
             }else{
                 database.insert(RecordProgresses) {
-                    it.recordId to id
-                    it.ordinal to (i + 1)
-                    it.watchedEpisodes to watchedEpisodes
-                    it.watchedRecord to emptyList() //可以写但没有必要。真需要更新时会检查时间点的数目的
-                    it.startTime to progressForm.startTime
-                    it.finishTime to (progressForm.finishTime ?: if(watchedEpisodes >= totalEpisodes) { now }else{ null }) //finishTime没写而实际已看完时，自动补全finishTime
+                    set(it.recordId, id)
+                    set(it.ordinal, i + 1)
+                    set(it.watchedEpisodes, watchedEpisodes)
+                    set(it.watchedRecord, emptyList()) //可以写但没有必要。真需要更新时会检查时间点的数目的
+                    set(it.startTime, progressForm.startTime)
+                    set(it.finishTime, progressForm.finishTime ?: if(watchedEpisodes >= totalEpisodes) { now }else{ null }) //finishTime没写而实际已看完时，自动补全finishTime
                 }
             }
         }
@@ -217,18 +217,18 @@ class RecordSetterServiceImpl(@Autowired private val database: Database) : Recor
         val now = DateTimeUtil.now()
         //记录模式创建。以无进度模式创建，所有记录都为0
         database.insert(Records) {
-            it.ownerId to user.id
-            it.animationId to form.animationId
-            it.seenOriginal to false
-            it.inDiary to false
+            set(it.ownerId, user.id)
+            set(it.animationId, form.animationId)
+            set(it.seenOriginal, false)
+            set(it.inDiary, false)
 
-            it.progressCount to 0
-            it.scatterRecord to emptyList()
+            set(it.progressCount, 0)
+            set(it.scatterRecord, emptyList())
 
-            it.lastActiveTime to now
-            it.lastActiveEvent to ActiveEvent(ActiveEventType.CREATE_RECORD)
-            it.createTime to now
-            it.updateTime to now
+            set(it.lastActiveTime, now)
+            set(it.lastActiveEvent, ActiveEvent(ActiveEventType.CREATE_RECORD))
+            set(it.createTime, now)
+            set(it.updateTime, now)
         }
     }
 }

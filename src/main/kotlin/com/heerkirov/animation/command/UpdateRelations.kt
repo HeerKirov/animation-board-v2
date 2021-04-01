@@ -2,7 +2,7 @@ package com.heerkirov.animation.command
 
 import com.heerkirov.animation.service.manager.AnimationRelationProcessor
 import com.heerkirov.animation.util.loadProperties
-import me.liuwj.ktorm.database.Database
+import org.ktorm.database.Database
 
 /**
  * @since 0.1.0

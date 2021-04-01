@@ -3,7 +3,7 @@ package com.heerkirov.animation.command
 import com.heerkirov.animation.service.manager.AnimationStaffProcessor
 import com.heerkirov.animation.service.manager.AnimationTagProcessor
 import com.heerkirov.animation.util.loadProperties
-import me.liuwj.ktorm.database.Database
+import org.ktorm.database.Database
 
 /**
  * @since 0.3.0

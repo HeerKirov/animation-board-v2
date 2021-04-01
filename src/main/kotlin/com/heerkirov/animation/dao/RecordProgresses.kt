@@ -4,8 +4,8 @@ import com.heerkirov.animation.model.data.RecordProgress
 import com.heerkirov.animation.util.ktorm.DateTimeConverter
 import com.heerkirov.animation.util.ktorm.NullableListConverter
 import com.heerkirov.animation.util.ktorm.json
-import me.liuwj.ktorm.dsl.QueryRowSet
-import me.liuwj.ktorm.schema.*
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.schema.*
 
 object RecordProgresses : BaseTable<RecordProgress>("record_progress") {
     val id = long("id").primaryKey()

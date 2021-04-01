@@ -2,8 +2,8 @@ package com.heerkirov.animation.command
 
 import com.heerkirov.animation.dao.RecordProgresses
 import com.heerkirov.animation.util.loadProperties
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 
 /**
  * @since 0.2.2
@@ -35,7 +35,7 @@ fun main() {
                     cnt += 1
                     item {
                         where { it.id eq progress.id }
-                        it.watchedRecord to progress.watchedRecord.map { t -> if(t != null && t > finishTime) null else t }
+                        set(it.watchedRecord, progress.watchedRecord.map { t -> if(t != null && t > finishTime) null else t })
                     }
                 }
             }

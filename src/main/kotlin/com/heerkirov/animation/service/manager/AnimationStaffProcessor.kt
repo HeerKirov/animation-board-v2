@@ -6,8 +6,8 @@ import com.heerkirov.animation.enums.ErrCode
 import com.heerkirov.animation.enums.StaffTypeInAnimation
 import com.heerkirov.animation.exception.BadRequestException
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -46,9 +46,9 @@ class AnimationStaffProcessor(@Autowired private val database: Database) {
         database.batchInsert(AnimationStaffRelations) {
             for ((staffId, staffType) in addItems) {
                 item {
-                    it.animationId to animationId
-                    it.staffId to staffId
-                    it.staffType to staffType
+                    set(it.animationId, animationId)
+                    set(it.staffId, staffId)
+                    set(it.staffType, staffType)
                 }
                 if(!keepItems.contains(staffId)) {
                     counts[staffId] = counts.computeIfAbsent(staffId) { 0 } + 1
@@ -60,7 +60,7 @@ class AnimationStaffProcessor(@Autowired private val database: Database) {
             counts.forEach { (staffId, delta) ->
                 item {
                     where { it.id eq staffId }
-                    it.animationCount to (it.animationCount plus delta)
+                    set(it.animationCount, it.animationCount plus delta)
                 }
             }
         }
@@ -95,7 +95,7 @@ class AnimationStaffProcessor(@Autowired private val database: Database) {
             for (row in rowSets) {
                 item {
                     where { it.id eq row.first }
-                    it.animationCount to row.second
+                    set(it.animationCount, row.second)
                 }
             }
         }

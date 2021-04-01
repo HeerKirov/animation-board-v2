@@ -17,11 +17,11 @@ import com.heerkirov.animation.model.result.*
 import com.heerkirov.animation.service.CommentService
 import com.heerkirov.animation.util.*
 import com.heerkirov.animation.util.ktorm.dsl.*
-import me.liuwj.ktorm.database.Database
-import me.liuwj.ktorm.dsl.*
-import me.liuwj.ktorm.entity.find
-import me.liuwj.ktorm.entity.sequenceOf
-import me.liuwj.ktorm.support.postgresql.ilike
+import org.ktorm.database.Database
+import org.ktorm.dsl.*
+import org.ktorm.entity.find
+import org.ktorm.entity.sequenceOf
+import org.ktorm.support.postgresql.ilike
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -128,13 +128,13 @@ class CommentServiceImpl(@Autowired private val database: Database) : CommentSer
         val now = DateTimeUtil.now()
 
         database.insert(Comments) {
-            it.animationId to form.animationId
-            it.ownerId to user.id
-            it.score to form.score
-            it.title to if(form.articleTitle?.isNotBlank() == true) form.articleTitle else null
-            it.article to if(form.article?.isNotBlank() == true) form.article else null
-            it.createTime to now
-            it.updateTime to now
+            set(it.animationId, form.animationId)
+            set(it.ownerId, user.id)
+            set(it.score, form.score)
+            set(it.title, if(form.articleTitle?.isNotBlank() == true) form.articleTitle else null)
+            set(it.article, if(form.article?.isNotBlank() == true) form.article else null)
+            set(it.createTime, now)
+            set(it.updateTime, now)
         }
     }
 
@@ -162,10 +162,10 @@ class CommentServiceImpl(@Autowired private val database: Database) : CommentSer
     override fun partialUpdate(animationId: Int, form: CommentUpdateForm, user: User) {
         if(database.update(Comments) {
             where { (it.animationId eq animationId) and (it.ownerId eq user.id) }
-            if(form.score != null) it.score to form.score
-            if(form.articleTitle != null) it.title to if(form.articleTitle.isNotBlank()) form.articleTitle else null
-            if(form.article != null) it.article to if(form.article.isNotBlank()) form.article else null
-            it.updateTime to DateTimeUtil.now()
+            if(form.score != null) set(it.score, form.score)
+            if(form.articleTitle != null) set(it.title, if(form.articleTitle.isNotBlank()) form.articleTitle else null)
+            if(form.article != null) set(it.article, if(form.article.isNotBlank()) form.article else null)
+            set(it.updateTime, DateTimeUtil.now())
         } == 0) throw NotFoundException("Comment of animation $animationId not found.")
     }
 
