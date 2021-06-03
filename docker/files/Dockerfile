@@ -6,7 +6,8 @@ ADD startup.sh /
 ADD sources.list /etc/apt/
 
 RUN apt-get update && \
-    apt-get install -y gettext imagemagick
+    apt-get install -y gettext imagemagick && \
+    chmod +x /startup.sh
 
 EXPOSE 8000 8000
 
