@@ -2,7 +2,7 @@
 
 PROJ_PATH="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.."
 WORK_DIR="$(mktemp -d)"
-VERSION="${$1:-"dev"}"
+VERSION="${1:-"dev"}"
 
 cp -f $PROJ_PATH/docker/files/Dockerfile $WORK_DIR
 cp -f $PROJ_PATH/docker/files/application.properties.template $WORK_DIR
