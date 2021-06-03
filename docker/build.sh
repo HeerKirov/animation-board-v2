@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 MAVEN_IMAGE=maven:3.8.1-openjdk-11
 MAVEN_REPOSITORY=$HOME/.m2
-PROJ_PATH="${BASH_SOURCE%/*}/.."
+PROJ_PATH="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.."
 
 sudo docker run -it --rm \
     -v $MAVEN_REPOSITORY:/root/.m2 \
