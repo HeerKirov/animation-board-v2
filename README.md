@@ -59,3 +59,34 @@ oss.bucket-name=
 # 从OSS取得的文件权限的缓存时间(ms)
 oss.presigned-duration=3600000
 ```
+
+## Build Docker Image
+```bash
+cd deploy
+
+# 在docker中编辑整个项目; 复用来自~/.m2的repository
+./build.sh
+
+# 将编译结果打包为镜像; 镜像名称为animation-board-v2，默认VERSION为dev
+./release.sh $VERSION
+```
+通过docker-compose部署的示例：
+```yaml
+animation-board-v2:
+  image: animation-board-v2:dev
+  container_name: animation-board-v2
+  ports:
+    - ${ANIMATION_BOARD_PORT}:8000
+  environment:
+    DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST}/animation_board_v2
+    DATASOURCE_USERNAME: ${POSTGRES_USERNAME}
+    DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    BASIC_SERVICE_URL: http://basic-service:8000
+    BASIC_SERVICE_APP_ID: ${ANIMATION_BOARD_APP_ID}
+    BASIC_SERVICE_APP_SECRET: ${ANIMATION_BOARD_APP_SECRET}
+    OSS_ENDPOINT: ${OSS_ENDPOINT}
+    OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID}
+    OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET}
+    OSS_BUCKET_NAME: ${OSS_BUCKET_NAME}
+    OSS_PRESIGNED_DURATION: 86400000
+```
