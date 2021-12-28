@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MAVEN_IMAGE=maven:3.8.1-openjdk-11
+MAVEN_IMAGE=maven:3.8.3-openjdk-17
 MAVEN_REPOSITORY=$HOME/.m2
 PROJ_PATH="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.."
 

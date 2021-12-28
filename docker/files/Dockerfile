@@ -1,4 +1,4 @@
-FROM openjdk:11-jre-slim
+FROM openjdk:17-jre-slim
 
 ADD animation-board-v2-*.jar /
 ADD application.properties.template /

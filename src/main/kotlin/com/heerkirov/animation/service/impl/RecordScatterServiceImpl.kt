@@ -186,41 +186,43 @@ class RecordScatterServiceImpl(@Autowired private val database: Database,
         }
     }
 
-    /**
-     * 从离散记录中抽取出可沉降的项。
-     */
-    private fun groupInScatterRecord(scatterRecord: List<ScatterRecord>, fromEpisode: Int, totalEpisodes: Int, prevItem: LocalDateTime): Pair<List<ScatterRecord>, List<LocalDateTime>> {
-        val unusedRecord = ArrayList<ScatterRecord>(scatterRecord.size)
-        val scatterMap = HashMap<Int, LinkedList<LocalDateTime>>().apply {
-            for (record in scatterRecord) {
-                val (episode, datetime) = record
-                if(episode >= fromEpisode) {
-                    this.computeIfAbsent(episode) { LinkedList() }.add(datetime.parseDateTime())
-                }else{
-                    unusedRecord.add(record)
+    companion object {
+        /**
+         * 从离散记录中抽取出可沉降的项。
+         */
+        internal fun groupInScatterRecord(scatterRecord: List<ScatterRecord>, fromEpisode: Int, totalEpisodes: Int, prevItem: LocalDateTime): Pair<List<ScatterRecord>, List<LocalDateTime>> {
+            val unusedRecord = ArrayList<ScatterRecord>(scatterRecord.size)
+            val scatterMap = HashMap<Int, LinkedList<LocalDateTime>>().apply {
+                for (record in scatterRecord) {
+                    val (episode, datetime) = record
+                    if(episode >= fromEpisode) {
+                        this.computeIfAbsent(episode) { LinkedList() }.add(datetime.parseDateTime())
+                    }else{
+                        unusedRecord.add(record)
+                    }
                 }
             }
-        }
-        val groupedList = LinkedList<LocalDateTime>()
-        var nextEpisode = fromEpisode
-        while (nextEpisode <= totalEpisodes) {
-            val list = scatterMap[nextEpisode] ?: break
-            val item = getClosestItem(list, groupedList.lastOrNull() ?: prevItem)
-            groupedList.add(item)
-            nextEpisode += 1
+            val groupedList = LinkedList<LocalDateTime>()
+            var nextEpisode = fromEpisode
+            while (nextEpisode <= totalEpisodes) {
+                val list = scatterMap[nextEpisode] ?: break
+                val item = getClosestItem(list, groupedList.lastOrNull() ?: prevItem)
+                groupedList.add(item)
+                nextEpisode += 1
+            }
+
+            val leftRecord = scatterMap.flatMap { (episode, list) ->
+                list.map { ScatterRecord(episode, it.toDateTimeString()) }
+            }
+
+            return Pair(unusedRecord + leftRecord, groupedList)
         }
 
-        val leftRecord = scatterMap.flatMap { (episode, list) ->
-            list.map { ScatterRecord(episode, it.toDateTimeString()) }
+        /**
+         * 从链表中取得与目标项最接近的项。这会更改链表。
+         */
+        private fun getClosestItem(list: LinkedList<LocalDateTime>, prevItem: LocalDateTime): LocalDateTime {
+            return list.apply { sortBy { Duration.between(it, prevItem).toMillis() } }.removeFirst()
         }
-
-        return Pair(unusedRecord + leftRecord, groupedList)
-    }
-
-    /**
-     * 从链表中取得与目标项最接近的项。这会更改链表。
-     */
-    private fun getClosestItem(list: LinkedList<LocalDateTime>, prevItem: LocalDateTime): LocalDateTime {
-        return list.apply { sortBy { Duration.between(prevItem, it).toMillis() } }.removeFirst()
     }
 }
