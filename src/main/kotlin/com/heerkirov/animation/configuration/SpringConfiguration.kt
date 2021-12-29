@@ -31,7 +31,7 @@ class SpringConfiguration : WebMvcConfigurationSupport() {
         return CorsFilter(UrlBasedCorsConfigurationSource().apply {
             registerCorsConfiguration("/**", CorsConfiguration().apply {
                 allowCredentials = true
-                allowedOrigins = listOf("*")
+                allowedOriginPatterns = listOf("*")
                 allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 allowedHeaders = listOf("*")
             })
